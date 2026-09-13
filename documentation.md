@@ -365,7 +365,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - PAGASA API (weather and safety alerts)
 - Google Maps API (mapping and directions)
 - Google/Facebook OAuth (authentication)
-- Stripe or local payment gateway (subscription billing)
+- RevenueCat SDK (In-App Purchases & Subscription Management via Google Play Billing and Apple App Store)
 - Firebase or Twilio (push notifications)
 - OpenAI API (AI itinerary generation - premium)
 
@@ -385,7 +385,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 ### Core Data Models:
 
 **User**
-- id, email, password_hash, phone, first_name, last_name, profile_photo_url, travel_style, budget_range, favorite_regions, created_at, updated_at, last_login, is_premium, premium_expiry
+- id, email, password_hash, phone, first_name, last_name, profile_photo_url, travel_style, budget_range, favorite_regions, created_at, updated_at, last_login, is_premium, premium_expiry, revenuecat_app_user_id
 
 **Destination**
 - id, name, category, description, historical_context, location (PostGIS Point), region, latitude, longitude, thumbnail_image, photos[], rating, review_count, is_hidden_gem (premium), created_at
@@ -496,9 +496,9 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 
 ### Payment & Subscription
 
-- Stripe API or local payment gateways (GCash, PayMaya)
-- Subscription management and billing
-- Webhook handling for subscription state changes
+- RevenueCat SDK for cross-platform auto-renewable subscription wrapping.
+- Google Play Console & Apple App Store Connect configuration for sandbox testing.
+- RevenueCat Webhooks to automatically sync subscription states (Entitlements) with the backend database.
 
 ### AI Itinerary Generation
 
@@ -545,22 +545,24 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 **Hours 24-36 (if extended hackathon):**
 
 - Begin one premium feature (group trips or AI itinerary)
+- Integrate RevenueCat SDK, configure Google Play/App Store sandbox environments, and implement a paywall screen to unlock Entitlements.
 - Performance optimization
 - Prepare demo and presentation materials
 
 ### MVP Deliverables (End of Hackathon):
 
-✓ Functional mobile app (iOS/Android or web version)
-✓ Authentication system with at least email login
-✓ Discovery recommendations with at least 50 sample destinations
-✓ Bucket list CRUD functionality
-✓ Check-in and travel journal with photo upload
-✓ Cultural guides for sample destinations
-✓ Festival/events display with basic data
-✓ Achievement system with 5-10 sample achievements
-✓ Location-based filtering working
-✓ Fully functional demo recording (2-3 minutes)
-✓ Documentation and architecture overview
+- ✓ Functional mobile app (iOS/Android or web version)
+- ✓ Authentication system with at least email login
+- ✓ Discovery recommendations with at least 50 sample destinations
+- ✓ Bucket list CRUD functionality
+- ✓ Check-in and travel journal with photo upload
+- ✓ Cultural guides for sample destinations
+- ✓ Festival/events display with basic data
+- ✓ Achievement system with 5-10 sample achievements
+- ✓ Location-based filtering working
+- ✓ RevenueCat SDK integrated with at least one active Entitlement for sandbox testing
+- ✓ Fully functional demo recording (2-3 minutes)
+- ✓ Documentation and architecture overview
 
 ### Post-Hackathon Roadmap:
 
