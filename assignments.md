@@ -1,5 +1,21 @@
 # PantasTour Development Workload and File Ownership
 
+## GitHub Branching Guidelines
+
+The team will use `main` for stable releases and `develop` for integrating completed features. Each member will create a temporary branch from `develop` for their assigned task.
+
+Branch names must describe the work being performed:
+
+- `feature/<feature-name>` for new features
+- `fix/<issue-name>` for bug fixes
+- `docs/<document-name>` for documentation
+- `test/<feature-name>` for test-related work
+- `chore/<task-name>` for configuration and maintenance
+
+Examples include `feature/authentication`, `feature/bucket-list`, and `fix/check-in-distance`.
+
+After completing a task, the member must open a pull request into `develop`. At least one other member should review the changes. Once the pull request is approved and merged, the temporary branch should be deleted. Direct pushes to `main` should not be allowed.
+
 ## 1. Purpose
 
 This document divides the development of PantasTour evenly among three team members based on the product requirements. Each member owns a complete group of features across the mobile application, backend API, database, and tests.
