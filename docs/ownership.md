@@ -31,8 +31,9 @@ The product documentation permits either React Native or Flutter for the mobile 
 - Notifications: Firebase Cloud Messaging
 - Subscriptions: RevenueCat
 - Testing: Jest and React Native Testing Library
+- Repository: npm workspaces with applications in `apps/` and shared packages in `packages/`
 
-This selection must be confirmed by all three members before repository initialization. Until it is confirmed, the paths below are a proposed scaffold. If the team selects Flutter or Django, preserve the feature and reviewer assignments but translate the paths as follows:
+This baseline is now reflected in the initial repository scaffold. Dependency versions and the package lockfile will be established after the team installs and agrees on a supported Node.js LTS release. If the team later selects Flutter or Django, preserve the feature and reviewer assignments but translate the paths as follows:
 
 | Selected baseline path | Flutter or Django equivalent |
 | --- | --- |
@@ -45,16 +46,24 @@ This selection must be confirmed by all three members before repository initiali
 
 The remainder of this document uses the selected React Native and Node.js baseline so that every concrete file has an accountable owner.
 
-### Github Repository Structure
+### Target GitHub Repository Structure
+
+The directories containing `.gitkeep` are intentional module boundaries for work that has not started. Replace each `.gitkeep` when the first implementation file is added.
 ```
 pantastour/
 ├── README.md
 ├── CONTRIBUTING.md
-├── LICENSE
+├── LICENSE                         # Added after the team selects a license
+├── .editorconfig
 ├── .gitignore
 ├── .env.example
+├── .prettierrc
+├── eslint.config.js
+├── tsconfig.base.json
 ├── package.json
+├── package-lock.json                # Generated after dependency bootstrap
 ├── docker-compose.yml
+├── scripts/
 │
 ├── apps/
 │   ├── mobile/
@@ -96,16 +105,11 @@ pantastour/
 │   │   │           └── [id].tsx
 │   │   │
 │   │   ├── src/
-│   │   │   ├── components/
-│   │   │   │   ├── common/
-│   │   │   │   ├── discovery/
-│   │   │   │   ├── journey/
-│   │   │   │   ├── festivals/
-│   │   │   │   └── alerts/
 │   │   │   ├── features/
 │   │   │   │   ├── auth/
 │   │   │   │   ├── profile/
 │   │   │   │   ├── discovery/
+│   │   │   │   ├── destinations/
 │   │   │   │   ├── cultural-guides/
 │   │   │   │   ├── bucket-list/
 │   │   │   │   ├── check-ins/
@@ -113,31 +117,24 @@ pantastour/
 │   │   │   │   ├── statistics/
 │   │   │   │   ├── festivals/
 │   │   │   │   ├── safety-alerts/
+│   │   │   │   ├── notifications/
 │   │   │   │   ├── subscriptions/
 │   │   │   │   ├── itineraries/
 │   │   │   │   └── group-trips/
-│   │   │   ├── hooks/
-│   │   │   ├── services/
-│   │   │   │   ├── api.ts
-│   │   │   │   ├── location.ts
-│   │   │   │   ├── notifications.ts
-│   │   │   │   └── storage.ts
-│   │   │   ├── store/
-│   │   │   ├── theme/
-│   │   │   ├── types/
-│   │   │   └── utils/
+│   │   │   ├── core/
+│   │   │   ├── ui/
+│   │   │   └── test/
 │   │   ├── assets/
 │   │   │   ├── icons/
 │   │   │   ├── images/
 │   │   │   └── badges/
-│   │   └── tests/
+│   │   └── README.md
 │   │
 │   └── api/
 │       ├── src/
 │       │   ├── server.ts
 │       │   ├── app.ts
-│       │   ├── config/
-│       │   ├── middleware/
+│       │   ├── platform/
 │       │   ├── modules/
 │       │   │   ├── auth/
 │       │   │   ├── users/
@@ -163,44 +160,51 @@ pantastour/
 │       │   ├── jobs/
 │       │   │   ├── poll-weather.job.ts
 │       │   │   └── send-reminders.job.ts
-│       │   └── utils/
 │       └── tests/
 │
 ├── packages/
-│   ├── shared-types/
-│   ├── validation/
+│   ├── contracts/
 │   ├── api-client/
-│   └── eslint-config/
+│   ├── eslint-config/
+│   └── typescript-config/
 │
 ├── database/
 │   ├── migrations/
 │   ├── seeds/
+│   │   ├── users.json
 │   │   ├── destinations.json
 │   │   ├── cultural-guides.json
+│   │   ├── bucket-list-items.json
+│   │   ├── check-ins.json
 │   │   ├── achievements.json
 │   │   ├── festivals.json
 │   │   ├── safety-alerts.json
 │   │   ├── group-trips.json
 │   │   └── itineraries.json
+│   ├── scripts/
+│   ├── README.md
 │   └── schema.sql
 │
 ├── docs/
+│   ├── README.md
+│   ├── product-spec.md
+│   ├── ownership.md
 │   ├── architecture.md
 │   ├── api.md
 │   ├── database.md
 │   ├── testing.md
-│   ├── user-flows.md
 │   ├── integrations.md
 │   ├── security-and-privacy.md
 │   └── demo-script.md
 │
 └── .github/
     ├── workflows/
-    │   ├── mobile-ci.yml
-    │   └── api-ci.yml
+    │   └── structure-check.yml
     ├── ISSUE_TEMPLATE/
     │   ├── bug-report.yml
-    │   └── feature-request.yml
+    │   ├── feature-request.yml
+    │   └── config.yml
+    ├── CODEOWNERS
     └── pull_request_template.md
 ```
 
@@ -227,11 +231,12 @@ pantastour/
 | --- | --- | --- | --- |
 | `README.md` | Member 3 | Member 1 | Project overview, installation, commands, environment setup, and demo instructions |
 | `CONTRIBUTING.md` | Member 3 | Member 2 | Branching, commits, pull requests, reviews, and coding workflow |
-| `LICENSE` | Member 3 | Member 1 | Project license selected by the team |
+| `LICENSE` | Member 3 | Member 1 | Project license selected by the team; pending team decision |
 | `.gitignore` | Member 3 | Member 2 | Ignore rules for Node.js, Expo, IDEs, builds, and environment files |
 | `.env.example` | Member 3 | Member 1 | Names of required environment variables without secret values |
+| `.editorconfig` | Member 1 | Member 2 | Cross-editor encoding, indentation, and line-ending rules |
 | `package.json` | Member 3 | Member 1 | Root workspace commands and dependencies |
-| `package-lock.json` | Member 3 | Member 1 | Dependency lockfile; changed only with intentional dependency updates |
+| `package-lock.json` | Member 3 | Member 1 | Generated during dependency bootstrap; changed only with intentional dependency updates |
 | `tsconfig.base.json` | Member 1 | Member 3 | Shared TypeScript compiler settings |
 | `eslint.config.js` | Member 1 | Member 2 | Shared linting rules |
 | `.prettierrc` | Member 1 | Member 2 | Shared formatting rules |
@@ -240,6 +245,7 @@ pantastour/
 | `packages/` | Assigned by package below | Cross-review | Code shared between the mobile app and API |
 | `database/` | Assigned by database area below | Cross-review | Schema, migrations, and seed data |
 | `docs/` | Assigned by document below | Cross-review | Technical and user-facing project documentation |
+| `scripts/` | Member 3 | Member 2 | Cross-platform repository and CI helper scripts |
 | `.github/` | Member 3 | Member 2 | Repository automation, issue templates, and pull-request template |
 
 ### 4.1 Local development environment
@@ -292,7 +298,7 @@ The Compose setup is for local development only. Secrets must remain in an untra
 | `apps/mobile/src/features/cultural-guides/` | Member 1 | Historical context and etiquette components |
 | `apps/mobile/app/premium/itinerary.tsx` | Member 1 | Premium itinerary input, generation status, daily plan, and regeneration interface |
 | `apps/mobile/src/features/itineraries/` | Member 1 | AI itinerary request, response parsing, display, and error handling |
-| `apps/mobile/src/components/discovery/` | Member 1 | Destination cards, filters, map markers, and recommendation sections |
+| `apps/mobile/src/features/discovery/components/` | Member 1 | Destination cards, filters, map markers, and recommendation sections |
 
 ### 5.3 Member 2 mobile modules: Journey, Gamification, and Group Trips
 
@@ -310,7 +316,7 @@ The Compose setup is for local development only. Secrets must remain in an untra
 | `apps/mobile/app/premium/group-trips/index.tsx` | Member 2 | Group-trip list and creation interface |
 | `apps/mobile/app/premium/group-trips/[id].tsx` | Member 2 | Invitations, destinations, voting, shared notes, decisions, and expense splitting |
 | `apps/mobile/src/features/group-trips/` | Member 2 | Collaborative-trip state, voting, invitations, notes, and expense calculations |
-| `apps/mobile/src/components/journey/` | Member 2 | Timeline entries, journal cards, statistics cards, and check-in controls |
+| `apps/mobile/src/features/check-ins/components/` | Member 2 | Timeline entries, journal cards, visited-map elements, and check-in controls |
 
 ### 5.4 Member 3 mobile modules: Events, Safety, and Services
 
@@ -325,30 +331,22 @@ The Compose setup is for local development only. Secrets must remain in an untra
 | `apps/mobile/src/features/safety-alerts/` | Member 3 | Weather and safety alert components, state, and API calls |
 | `apps/mobile/src/features/notifications/` | Member 3 | Device registration, notification preferences, and deep-link handling |
 | `apps/mobile/src/features/subscriptions/` | Member 3 | RevenueCat entitlement and paywall logic |
-| `apps/mobile/src/components/festivals/` | Member 3 | Festival cards, calendar, filters, and survival-guide sections |
-| `apps/mobile/src/components/alerts/` | Member 3 | Alert cards, severity indicators, maps, and advice panels |
+| `apps/mobile/src/features/festivals/components/` | Member 3 | Festival cards, calendar, filters, and survival-guide sections |
+| `apps/mobile/src/features/safety-alerts/components/` | Member 3 | Alert cards, severity indicators, maps, and advice panels |
 
 ### 5.5 Shared mobile infrastructure with accountable owners
 
 | File or folder | Primary owner | Reviewer | Responsibility |
 | --- | --- | --- | --- |
-| `apps/mobile/src/components/common/` | Member 1 | Member 2 | Buttons, fields, cards, dialogs, loading states, and empty states |
-| `apps/mobile/src/hooks/` | Member 2 | Member 1 | General reusable hooks; feature-only hooks remain in their feature folders |
-| `apps/mobile/src/services/api.ts` | Member 1 | Member 3 | Base URL, headers, JWT attachment, refresh, and API error conversion |
-| `apps/mobile/src/services/location.ts` | Member 2 | Member 1 | GPS permission, coordinates, distance, and location watcher |
-| `apps/mobile/src/services/camera.ts` | Member 2 | Member 3 | Camera and photo-library permissions |
-| `apps/mobile/src/services/storage.ts` | Member 2 | Member 1 | Secure token storage and local app storage |
-| `apps/mobile/src/services/notifications.ts` | Member 3 | Member 1 | Push-token registration and notification interaction |
-| `apps/mobile/src/store/` | Member 1 | Member 2 | Global authentication, user, and application state configuration |
-| `apps/mobile/src/theme/` | Member 1 | Member 3 | Colors, spacing, typography, and reusable styles |
-| `apps/mobile/src/types/` | Member 1 | Member 2 | Mobile-only types; shared API types belong in `packages/shared-types/` |
-| `apps/mobile/src/utils/` | Member 2 | Member 3 | General formatting and calculation utilities |
-| `apps/mobile/tests/auth/` | Member 1 | Member 3 | Authentication and onboarding tests |
-| `apps/mobile/tests/discovery/` | Member 1 | Member 3 | Discovery and destination tests |
-| `apps/mobile/tests/itineraries/` | Member 1 | Member 2 | AI itinerary form, generation, structured results, and error-state tests |
-| `apps/mobile/tests/journey/` | Member 2 | Member 1 | Bucket-list, check-in, journal, achievement, and statistics tests |
-| `apps/mobile/tests/group-trips/` | Member 2 | Member 1 | Group creation, invitation, vote, notes, and expense-split tests |
-| `apps/mobile/tests/events/` | Member 3 | Member 2 | Festival, alert, notification, and subscription tests |
+| `apps/mobile/src/ui/` | Member 1 | Member 2 | Generic buttons, fields, cards, dialogs, loading states, theme tokens, and reusable styles |
+| `apps/mobile/src/core/api/` | Member 1 | Member 3 | Base URL, transport configuration, JWT attachment, refresh, and API error conversion |
+| `apps/mobile/src/core/location/` | Member 2 | Member 1 | GPS permission, coordinates, distance, and location watcher |
+| `apps/mobile/src/core/camera/` | Member 2 | Member 3 | Camera and photo-library permissions |
+| `apps/mobile/src/core/storage/` | Member 2 | Member 1 | Secure token storage and local application storage |
+| `apps/mobile/src/core/notifications/` | Member 3 | Member 1 | Push-token registration and notification interaction |
+| `apps/mobile/src/core/store/` | Member 1 | Member 2 | Global authentication, user, and application state configuration |
+| `apps/mobile/src/test/` | Member 2 | Member 3 | Shared Jest setup, render helpers, mocks, fixtures, and factories |
+| Feature-local `hooks/`, `schemas/`, `types/`, and `__tests__/` | Feature owner | Assigned reviewer | Logic and tests used by only one feature remain colocated with that feature |
 
 ## 6. Backend API Ownership
 
@@ -360,12 +358,14 @@ The Compose setup is for local development only. Secrets must remain in an untra
 | `apps/api/tsconfig.json` | Member 1 | Member 3 | API TypeScript settings |
 | `apps/api/src/server.ts` | Member 3 | Member 1 | HTTP and WebSocket server startup and graceful shutdown |
 | `apps/api/src/app.ts` | Member 3 | Member 1 | Express application, middleware, and route registration |
-| `apps/api/src/config/` | Member 3 | Member 1 | Environment, database, Redis, storage, and integration configuration |
-| `apps/api/src/middleware/auth.middleware.ts` | Member 1 | Member 3 | JWT verification and current-user attachment |
-| `apps/api/src/middleware/error.middleware.ts` | Member 3 | Member 1 | Central error conversion and response handling |
-| `apps/api/src/middleware/rate-limit.middleware.ts` | Member 3 | Member 2 | API rate limiting |
-| `apps/api/src/middleware/validate.middleware.ts` | Member 1 | Member 2 | Request validation integration |
-| `apps/api/src/utils/` | Member 2 | Member 3 | General backend utilities |
+| `apps/api/src/platform/config/` | Member 3 | Member 1 | Validated environment and integration configuration |
+| `apps/api/src/platform/database/` | Member 2 | Member 3 | PostgreSQL/PostGIS connection and migration integration |
+| `apps/api/src/platform/cache/` | Member 3 | Member 2 | Redis connection, cache primitives, and job coordination |
+| `apps/api/src/platform/http/auth.middleware.ts` | Member 1 | Member 3 | JWT verification and current-user attachment |
+| `apps/api/src/platform/http/error.middleware.ts` | Member 3 | Member 1 | Central error conversion and response handling |
+| `apps/api/src/platform/http/rate-limit.middleware.ts` | Member 3 | Member 2 | API rate limiting |
+| `apps/api/src/platform/http/validate.middleware.ts` | Member 1 | Member 2 | Shared-contract request validation integration |
+| `apps/api/src/platform/logging/` | Member 3 | Member 2 | Structured application and job logging |
 
 ### 6.2 Member 1 backend modules: Accounts, Discovery, and AI Itineraries
 
@@ -435,24 +435,26 @@ The `destinations` module must depend on a narrow entitlement interface rather t
 | Group-trip membership and authorization | Member 2 | Exposes a reusable membership check consumed by Member 1's itinerary route |
 | OpenAI credentials and requests | Member 1 | Runs only on the backend; the API key must never be bundled into the mobile application |
 
-Member 1 owns itinerary generation behavior, while Member 2 owns collaboration and persistence. Their shared contract must be defined in `packages/shared-types/` before implementation.
+Member 1 owns itinerary generation behavior, while Member 2 owns collaboration and persistence. Their runtime schema and inferred TypeScript contract must be defined in `packages/contracts/` before implementation.
 
 ## 7. Shared Package Ownership
 
 | File or folder | Primary owner | Reviewer | Responsibility |
 | --- | --- | --- | --- |
-| `packages/shared-types/` | Member 1 | Member 2 | Shared entities, request types, response types, enums, and pagination types |
-| `packages/validation/` | Member 2 | Member 1 | Shared validation schemas and validation utilities |
+| `packages/contracts/` | Member 1 | Members 2 and 3 | Runtime validation schemas, inferred request and response types, enums, and pagination contracts |
 | `packages/api-client/` | Member 1 | Member 3 | Typed client functions used by the mobile application |
 | `packages/eslint-config/` | Member 3 | Member 1 | Shared lint configuration package |
+| `packages/typescript-config/` | Member 1 | Member 3 | Shared TypeScript presets for applications and packages |
 
 Feature-specific files inside shared packages remain assigned as follows:
 
 | Shared package file group | Owner |
 | --- | --- |
-| Authentication, user, destination, cultural-guide, and AI-itinerary request/response types and schemas | Member 1 |
-| Bucket-list, check-in, achievement, statistics, group-trip, expense, and persisted-itinerary types and schemas | Member 2 |
-| Festival, safety-alert, notification, and subscription types and schemas | Member 3 |
+| Authentication, user, destination, cultural-guide, and AI-itinerary contracts | Member 1 |
+| Bucket-list, check-in, achievement, statistics, group-trip, expense, and persisted-itinerary contracts | Member 2 |
+| Festival, safety-alert, notification, and subscription contracts | Member 3 |
+
+Define each runtime schema once in `packages/contracts/` and infer its TypeScript type from that schema where possible. Do not maintain a separate hand-written type for the same payload.
 
 ## 8. Database Ownership
 
@@ -511,11 +513,12 @@ Feature-specific files inside shared packages remain assigned as follows:
 
 | File | Primary owner | Reviewer | Responsibility |
 | --- | --- | --- | --- |
+| `docs/product-spec.md` | Member 1 | Members 2 and 3 | Product scope, roles, screens, workflows, technical requirements, and MVP boundary |
+| `docs/ownership.md` | Member 3 | Members 1 and 2 | Repository layout, ownership, review assignments, and development order |
 | `docs/architecture.md` | Member 3 | Member 1 | System components, deployment, integrations, and data flow |
 | `docs/api.md` | Member 1 | Members 2 and 3 | API conventions and endpoint reference; each member documents their endpoints |
 | `docs/database.md` | Member 2 | Members 1 and 3 | Tables, relationships, constraints, indexes, and PostGIS usage |
 | `docs/testing.md` | Member 2 | Member 3 | Test strategy, test accounts, cases, and results |
-| `docs/user-flows.md` | Member 1 | Member 2 | Onboarding, discovery, bucket list, check-in, safety, and festival workflows |
 | `docs/integrations.md` | Member 3 | Member 1 | Maps, PAGASA, Firebase, storage, RevenueCat, and OpenAI configuration; Member 1 authors the OpenAI subsection |
 | `docs/security-and-privacy.md` | Member 3 | Member 1 | Authentication, secrets, permissions, privacy, rate limits, and secure storage |
 | `docs/demo-script.md` | Member 1 | Members 2 and 3 | Ordered demo flow with speaking parts for all members |
@@ -524,12 +527,14 @@ Feature-specific files inside shared packages remain assigned as follows:
 
 | File or folder | Primary owner | Reviewer | Responsibility |
 | --- | --- | --- | --- |
-| `.github/workflows/mobile-ci.yml` | Member 3 | Member 1 | Install, lint, type-check, and test the mobile application |
-| `.github/workflows/api-ci.yml` | Member 3 | Member 2 | Install, lint, type-check, test, and validate the API |
+| `.github/workflows/structure-check.yml` | Member 3 | Member 2 | Verify the required initial repository structure before dependency bootstrap |
+| `.github/workflows/mobile-ci.yml` | Member 3 | Member 1 | Add after dependency bootstrap to install, lint, type-check, and test the mobile application |
+| `.github/workflows/api-ci.yml` | Member 3 | Member 2 | Add after dependency bootstrap to install, lint, type-check, test, and validate the API |
 | `.github/ISSUE_TEMPLATE/bug-report.yml` | Member 3 | Member 2 | Structured bug reports |
 | `.github/ISSUE_TEMPLATE/feature-request.yml` | Member 1 | Member 3 | Structured feature requests |
+| `.github/ISSUE_TEMPLATE/config.yml` | Member 3 | Member 2 | Disable unstructured blank issues |
 | `.github/pull_request_template.md` | Member 2 | Member 3 | Change description, screenshots, tests, migration notes, and checklist |
-| `.github/CODEOWNERS` | Member 3 | Members 1 and 2 | Automatic review requests based on the ownership in this document |
+| `.github/CODEOWNERS` | Member 3 | Members 1 and 2 | Automatic review requests; placeholder examples must be replaced with real GitHub usernames |
 
 ## 11. Testing and Cross-Review Assignment
 

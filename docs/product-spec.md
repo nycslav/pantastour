@@ -13,7 +13,7 @@
 2. Application Architecture
 3. User Roles & Authentication
 4. MVP Feature Specifications
-5. Premium Features
+5. Premium and Stretch Features
 6. Page & Screen Specifications
 7. User Workflows & Flows
 8. Technical Requirements
@@ -42,15 +42,20 @@ Premium features unlock advanced capabilities including offline functionality, A
 
 ## 2. APPLICATION ARCHITECTURE
 
-### Technology Stack:
+### Selected Technology Stack:
 
-- **Frontend:** React Native or Flutter (cross-platform mobile)
-- **Backend:** Node.js/Express or Python/Django with RESTful API
+- **Frontend:** React Native with Expo and TypeScript
+- **Navigation:** Expo Router
+- **Backend:** Node.js with Express and TypeScript using a RESTful API
 - **Database:** PostgreSQL with PostGIS for geospatial queries
-- **Real-time:** WebSockets for live notifications and weather alerts
+- **Real-time:** Push notifications for the MVP; WebSockets are a post-MVP enhancement
 - **Caching:** Redis for location-based queries and session management
-- **Maps:** Google Maps API or OpenStreetMap for mapping functionality
+- **Maps:** Google Maps behind a backend adapter; an alternative provider may be substituted
+- **Notifications:** Firebase Cloud Messaging
+- **Subscriptions:** RevenueCat
 - **Cloud:** AWS, Google Cloud, or Firebase for hosting and storage
+
+The repository is organized as an npm-workspace monorepo. Executable applications live in `apps/`, shared HTTP contracts and client code live in `packages/`, database assets live in `database/`, and engineering documentation lives in `docs/`. See [Architecture](architecture.md) and [Ownership](ownership.md) for the current boundaries.
 
 ---
 
@@ -151,7 +156,9 @@ Comprehensive database of Philippine festivals with location-based recommendatio
 
 ---
 
-## 5. PREMIUM FEATURES
+## 5. PREMIUM AND STRETCH FEATURES
+
+The features in this section are post-MVP stretch goals unless a feature is explicitly listed in the MVP deliverables. RevenueCat sandbox entitlement and a basic paywall remain part of the required MVP, but the advanced premium capabilities they unlock must not delay the core product flows.
 
 ### 5.1 Complete Offline Mode
 
@@ -347,8 +354,9 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - Camera and photo library access
 - Push notification handling
 - Offline storage with SQLite or Realm
-- Maps integration (Google Maps or MapBox)
-- WebSocket support for real-time updates
+- Google Maps integration behind the mobile/API abstraction
+- Push-notification support for alerts and reminders
+- WebSocket support as a post-MVP enhancement
 
 ### Backend Requirements:
 
@@ -356,7 +364,8 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - JWT-based authentication and session management
 - PostgreSQL database with PostGIS extension for geospatial queries
 - Redis caching layer for performance
-- WebSocket server for real-time notifications
+- Push-notification dispatch for the MVP
+- WebSocket server as a post-MVP enhancement
 - Background job processing for alerts and recommendations
 - File storage (AWS S3 or Google Cloud Storage)
 
@@ -366,7 +375,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - Google Maps API (mapping and directions)
 - Google/Facebook OAuth (authentication)
 - RevenueCat SDK (In-App Purchases & Subscription Management via Google Play Billing and Apple App Store)
-- Firebase or Twilio (push notifications)
+- Firebase Cloud Messaging (push notifications)
 - OpenAI API (AI itinerary generation - premium)
 
 ### Performance & Security:
@@ -445,7 +454,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 
 ### Travel Journal & Check-In Endpoints:
 
-- `POST /check-in` - Create check-in with photo and journal
+- `POST /check-ins` - Create check-in with photo and journal
 - `GET /check-ins` - Get user's check-in history
 - `GET /check-ins/timeline` - Get timeline view of check-ins
 - `GET /check-ins/map` - Get map view of visited locations
@@ -521,7 +530,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 **Hours 0-3: Planning & Setup**
 
 - Finalize team roles (backend, frontend, design, PM)
-- Create project repositories and development environment
+- Initialize the monorepo and local development environment
 - Design UI mockups for key screens
 
 **Hours 3-12: Core Development Phase 1**
