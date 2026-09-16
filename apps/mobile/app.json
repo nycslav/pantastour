@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Saraya",
+    "slug": "saraya",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "saraya",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
