@@ -217,7 +217,25 @@ pantastour/
 5. Database migrations must be reviewed by another member before merging.
 6. Shared files still have one primary owner to prevent conflicting edits.
 
-## 3. Balanced Feature Assignment
+## 3. Current Shipathon Team Roles
+
+The following roles define the team's current Shipathon responsibilities. They focus the three members on one complete and polished demonstration without removing any features from the long-term product plan.
+
+| Member | Current role | Main responsibilities |
+| --- | --- | --- |
+| **Member 1** | Mobile Experience | Navigation, visual design, destination discovery, destination details, the trip-preference form, and the itinerary-results screen |
+| **Member 2** | Backend and AI | API foundation, destination data, OpenAI itinerary generation, itinerary storage, and backend tests |
+| **Member 3** | RevenueCat and Delivery | Paywall, purchases, premium access, Android builds, GitHub setup, documentation, testing, and demo preparation |
+
+All three members share responsibility for testing the complete Shipathon demonstration flow:
+
+`Destination discovery -> trip preferences -> RevenueCat paywall -> test purchase -> AI itinerary`
+
+These current Shipathon roles take priority when an assignment below overlaps with them. The detailed feature and file ownership in Sections 4 through 13 and Section 15 remains the long-term plan for building the complete application. The Git workflow in Section 14 applies during both the Shipathon and long-term development.
+
+### 3.1 Long-Term Product Ownership
+
+The original balanced feature assignment below remains the ownership plan for completing the full PantasTour product after the focused Shipathon build.
 
 | Member | Primary feature area | Main responsibilities |
 | --- | --- | --- |
@@ -588,7 +606,9 @@ Each member completes features in this order:
 - Member 2 consolidates testing evidence and results.
 - All members present the feature area they implemented.
 
-## 13. MVP and Stretch-Goal Boundary
+## 13. Full Product MVP and Stretch-Goal Boundary
+
+This section describes the MVP for the complete PantasTour product, not the smaller current Shipathon demonstration. During the Shipathon, the current roles and shared demonstration flow in Section 3 take priority. All features below remain part of the long-term product plan.
 
 ### Required MVP
 
