@@ -1,4 +1,4 @@
-# Contributing to PantasTour
+# Contributing to Saraya
 
 ## Branches
 

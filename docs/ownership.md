@@ -1,4 +1,4 @@
-# PantasTour Development Workload and File Ownership
+# Saraya Development Workload and File Ownership
 
 ## GitHub Branching Guidelines
 
@@ -18,7 +18,7 @@ After completing a task, the member must open a pull request into `develop`. At 
 
 ## 1. Purpose
 
-This document divides the development of PantasTour evenly among three team members based on the product requirements. Each member owns a complete group of features across the mobile application, backend API, database, and tests.
+This document divides the development of Saraya evenly among three team members based on the product requirements. Each member owns a complete group of features across the mobile application, backend API, database, and tests.
 
 ### Selected implementation baseline
 
@@ -50,7 +50,7 @@ The remainder of this document uses the selected React Native and Node.js baseli
 
 The directories containing `.gitkeep` are intentional module boundaries for work that has not started. Replace each `.gitkeep` when the first implementation file is added.
 ```
-pantastour/
+saraya/
 ├── README.md
 ├── CONTRIBUTING.md
 ├── LICENSE                         # Added after the team selects a license

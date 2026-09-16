@@ -1,6 +1,6 @@
 # Database
 
-PantasTour uses PostgreSQL with PostGIS.
+Saraya uses PostgreSQL with PostGIS.
 
 - `migrations/` contains immutable, ordered migrations.
 - `seeds/` contains reproducible development and demo data.
