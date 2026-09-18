@@ -5,7 +5,7 @@ import {
   type ItineraryStatus,
   type TravelPace,
   type TripPreferences,
-} from '@pantastour/contracts';
+} from '@saraya/contracts';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,

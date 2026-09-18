@@ -2,8 +2,8 @@ import type {
   DestinationDetail,
   DestinationSummary,
   DiscoveryQuery,
-} from '@pantastour/contracts';
-import { createApiClient } from '@pantastour/api-client';
+} from '@saraya/contracts';
+import { createApiClient } from '@saraya/api-client';
 
 import { mockDestinations } from './data/mockDestinations';
 

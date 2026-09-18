@@ -2,7 +2,7 @@ import type {
   DestinationCategory,
   DestinationDetail,
   IslandGroup,
-} from '@pantastour/contracts';
+} from '@saraya/contracts';
 
 type DestinationSeed = {
   id: string;

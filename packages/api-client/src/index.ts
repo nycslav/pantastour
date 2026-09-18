@@ -5,7 +5,7 @@ import {
   type DiscoveryQuery,
   type GeneratedItinerary,
   type TripPreferences,
-} from '@pantastour/contracts';
+} from '@saraya/contracts';
 import { z } from 'zod';
 
 export class ApiClientError extends Error {

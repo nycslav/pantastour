@@ -1,6 +1,6 @@
-# PantasTour
+# Saraya
 
-PantasTour is a personalized mobile travel companion for discovering and exploring the Philippines.
+Saraya is a personalized mobile travel companion for discovering and exploring the Philippines.
 
 ## Repository layout
 

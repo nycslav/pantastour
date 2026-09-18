@@ -1,4 +1,4 @@
-# PantasTour Development Workload and File Ownership
+# Saraya Development Workload and File Ownership
 
 ## GitHub Branching Guidelines
 
@@ -18,7 +18,7 @@ After completing a task, the member must open a pull request into `develop`. At 
 
 ## 1. Purpose
 
-This document divides the development of PantasTour evenly among three team members based on the product requirements. Each member owns a complete group of features across the mobile application, backend API, database, and tests.
+This document divides the development of Saraya evenly among three team members based on the product requirements. Each member owns a complete group of features across the mobile application, backend API, database, and tests.
 
 ### Selected implementation baseline
 
@@ -50,7 +50,7 @@ The remainder of this document uses the selected React Native and Node.js baseli
 
 The directories containing `.gitkeep` are intentional module boundaries for work that has not started. Replace each `.gitkeep` when the first implementation file is added.
 ```
-pantastour/
+saraya/
 ├── README.md
 ├── CONTRIBUTING.md
 ├── LICENSE                         # Added after the team selects a license
@@ -235,7 +235,7 @@ These current Shipathon roles take priority when an assignment below overlaps wi
 
 ### 3.1 Long-Term Product Ownership
 
-The original balanced feature assignment below remains the ownership plan for completing the full PantasTour product after the focused Shipathon build.
+The original balanced feature assignment below remains the ownership plan for completing the full Saraya product after the focused Shipathon build.
 
 | Member | Primary feature area | Main responsibilities |
 | --- | --- | --- |
@@ -608,7 +608,7 @@ Each member completes features in this order:
 
 ## 13. Full Product MVP and Stretch-Goal Boundary
 
-This section describes the MVP for the complete PantasTour product, not the smaller current Shipathon demonstration. During the Shipathon, the current roles and shared demonstration flow in Section 3 take priority. All features below remain part of the long-term product plan.
+This section describes the MVP for the complete Saraya product, not the smaller current Shipathon demonstration. During the Shipathon, the current roles and shared demonstration flow in Section 3 take priority. All features below remain part of the long-term product plan.
 
 ### Required MVP
 
