@@ -2,10 +2,12 @@ import {
   destinationDetailSchema,
   destinationSummarySchema,
   generatedItinerarySchema,
+  nearbyDestinationSummarySchema,
   type DiscoveryQuery,
   type GeneratedItinerary,
+  type NearbyDestinationQueryInput,
   type TripPreferences,
-} from '@pantastour/contracts';
+} from '@saraya/contracts';
 import { z } from 'zod';
 
 export class ApiClientError extends Error {
@@ -47,6 +49,16 @@ export function createApiClient(baseUrl: string, getAccessToken?: () => Promise<
       async getById(id: string) {
         return destinationDetailSchema.parse(await request(`/destinations/${encodeURIComponent(id)}`));
       },
+      async nearby(query: NearbyDestinationQueryInput) {
+        const params = new URLSearchParams({
+          latitude: String(query.latitude),
+          longitude: String(query.longitude),
+        });
+        if (query.radiusKm !== undefined) params.set('radiusKm', String(query.radiusKm));
+        if (query.limit !== undefined) params.set('limit', String(query.limit));
+        const data = await request(`/destinations/nearby?${params.toString()}`);
+        return z.array(nearbyDestinationSummarySchema).parse(data);
+      },
     },
     itineraries: {
       async generate(preferences: TripPreferences, signal?: AbortSignal) {
@@ -56,6 +68,11 @@ export function createApiClient(baseUrl: string, getAccessToken?: () => Promise<
       },
       async save(itinerary: GeneratedItinerary) {
         await request('/itineraries', { method: 'POST', body: JSON.stringify(itinerary) });
+      },
+      async getById(id: string) {
+        return generatedItinerarySchema.parse(
+          await request(`/itineraries/${encodeURIComponent(id)}`),
+        );
       },
     },
   };

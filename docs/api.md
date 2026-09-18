@@ -12,3 +12,80 @@ The team must agree on these contracts before parallel feature development:
 
 Use plural resource names consistently, such as `/check-ins`, `/destinations`, and `/festivals`.
 
+## Current destination API
+
+The Member 2 Shipathon backend currently exposes the first discovery vertical slice. Successful
+responses use the shared runtime schemas from `packages/contracts`; errors use an `error` object
+with stable `code` and `message` fields.
+
+### `GET /health`
+
+Returns `{ "status": "ok" }` when the API process is ready.
+
+### `GET /destinations`
+
+Returns destination summaries. The endpoint accepts these optional query parameters:
+
+- `search` matches destination names, provinces, regions, categories, and tags.
+- `islandGroup` accepts `Luzon`, `Visayas`, or `Mindanao`.
+- `interest` matches a destination tag.
+
+The development dataset contains 100 curated destinations grouped by official Philippine region,
+exceeding the product specification's requirement of at least 50 sample destinations.
+
+### `GET /destinations/:id`
+
+Returns complete destination details, including coordinates, highlights, best-for tags, and the
+cultural guide. An unknown ID returns `404` with the `DESTINATION_NOT_FOUND` error code.
+
+### `GET /destinations/nearby`
+
+Returns destinations ordered from nearest to farthest. It requires `latitude` and `longitude` and
+accepts `radiusKm` (default `25`, maximum `500`) and `limit` (default `20`, maximum `100`). Each
+summary includes `distanceKm`. PostgreSQL deployments use indexed PostGIS distance queries.
+
+Invalid query parameters return `400` with the `VALIDATION_ERROR` error code. Unknown routes
+return `404` with `ROUTE_NOT_FOUND`.
+
+## Itinerary API
+
+### `POST /itineraries/generate`
+
+Accepts the shared trip-preference contract: destination, starting point, 1-30 day duration,
+budget, interests, pace, and accessibility needs. It returns a validated day-by-day itinerary.
+When `OPENAI_API_KEY` is configured, the API uses OpenAI structured output; otherwise it uses the
+deterministic generator for local development and reliable demonstrations.
+
+The mobile client calls this endpoint only after the RevenueCat premium handoff. Server-side
+RevenueCat entitlement verification remains Member 3's integration boundary.
+
+### `POST /itineraries`
+
+Validates and saves a generated itinerary. Destination IDs must agree, days must match the requested
+duration in sequence, and stop IDs must be unique. It returns the saved itinerary with status `201`.
+
+### `GET /itineraries/:id`
+
+Returns a saved itinerary with its ordered days and stops. Unknown IDs return `404` with the
+`ITINERARY_NOT_FOUND` error code.
+
+## Local development
+
+Start the API from the repository root:
+
+```text
+npm run dev:api
+```
+
+The default address is `http://localhost:3000`. Set `API_PORT` to use another port.
+
+To make the Expo application use the API instead of its deterministic fixtures, provide these
+public mobile environment variables before starting Expo:
+
+```text
+EXPO_PUBLIC_DATA_MODE=api
+EXPO_PUBLIC_API_BASE_URL=http://<reachable-host>:3000
+```
+
+Use the computer's LAN address instead of `localhost` when testing on a physical phone.
+

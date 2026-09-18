@@ -1,4 +1,4 @@
-import type { DestinationSummary } from '@pantastour/contracts';
+import type { DestinationSummary } from '@saraya/contracts';
 import { useRouter } from 'expo-router';
 import { ArrowRight, MapPin, Star } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

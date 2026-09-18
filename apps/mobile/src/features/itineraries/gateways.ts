@@ -1,4 +1,4 @@
-import type { GeneratedItinerary, TripPreferences } from '@pantastour/contracts';
+import type { GeneratedItinerary, TripPreferences } from '@saraya/contracts';
 
 export interface ItineraryGateway {
   generate(preferences: TripPreferences, signal?: AbortSignal): Promise<GeneratedItinerary>;

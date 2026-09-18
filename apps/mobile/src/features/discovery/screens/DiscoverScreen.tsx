@@ -1,4 +1,4 @@
-import type { DestinationSummary, IslandGroup } from '@pantastour/contracts';
+import type { DestinationSummary, IslandGroup } from '@saraya/contracts';
 import { Map, Rows3 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

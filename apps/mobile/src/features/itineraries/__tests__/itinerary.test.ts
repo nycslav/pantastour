@@ -1,4 +1,4 @@
-import { tripPreferencesSchema } from '@pantastour/contracts';
+import { tripPreferencesSchema } from '@saraya/contracts';
 
 import { createMockItinerary, MockPremiumAccessGateway } from '../services/mockAdapters';
 

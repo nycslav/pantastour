@@ -29,9 +29,9 @@ mock adapter demonstrates the free-user handoff that Member 3's RevenueCat adapt
 Commands:
 
 ```text
-npm run start --workspace=@pantastour/mobile
-npm run lint --workspace=@pantastour/mobile
-npm run typecheck --workspace=@pantastour/mobile
-npm run test --workspace=@pantastour/mobile
+npm run start --workspace=@saraya/mobile
+npm run lint --workspace=@saraya/mobile
+npm run typecheck --workspace=@saraya/mobile
+npm run test --workspace=@saraya/mobile
 ```
 

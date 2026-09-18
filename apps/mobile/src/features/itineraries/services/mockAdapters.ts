@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createApiClient } from '@pantastour/api-client';
+import { createApiClient } from '@saraya/api-client';
 import {
   generatedItinerarySchema,
   tripPreferencesSchema,
   type GeneratedItinerary,
   type ItineraryStop,
   type TripPreferences,
-} from '@pantastour/contracts';
+} from '@saraya/contracts';
 
 import { mockDestinations } from '@/features/discovery/data/mockDestinations';
 
