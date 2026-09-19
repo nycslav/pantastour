@@ -10,21 +10,21 @@ This directory hosts the Expo Router application. Its implementation preserves t
 
 Do not commit provider secrets to the mobile bundle. All OpenAI and privileged integration calls must go through the API.
 
-## Member 1 Shipathon slice
+## Current mobile integration
 
-The current mobile implementation provides the Saraya Discover, destination-detail, trip-preference,
-premium-handoff, generation, and itinerary-result flow. It follows the existing route/feature/UI
-boundaries and leaves replaceable tab shells for teammate-owned features.
+The mobile application uses the Saraya API for destination discovery, destination details, itinerary
+generation, and itinerary persistence. It follows the existing route, feature, gateway, and shared UI
+boundaries while leaving teammate-owned features in their assigned modules.
 
-The app defaults to deterministic nationwide fixtures. To connect Member 2's API later, set:
+Set the reachable API URL before starting the mobile application:
 
 ```text
-EXPO_PUBLIC_DATA_MODE=api
 EXPO_PUBLIC_API_BASE_URL=http://<reachable-host>:3000
 ```
 
-Use `EXPO_PUBLIC_MOCK_PREMIUM=true` to exercise the existing-premium path. When false or omitted, the
-mock adapter demonstrates the free-user handoff that Member 3's RevenueCat adapter will replace.
+The application does not fall back to fabricated destination or itinerary data. Until the teammate-owned
+RevenueCat integration is configured, premium itinerary access reports that the service is unavailable
+instead of simulating a successful purchase.
 
 Commands:
 

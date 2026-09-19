@@ -124,7 +124,7 @@ export function DiscoverScreen() {
               </View>
             );
           })}
-          <Text style={styles.mapNote}>Interactive provider maps connect through Member 2’s destination data later.</Text>
+          <Text style={styles.mapNote}>Destination counts reflect the current results returned by the Saraya API.</Text>
         </View>
       ) : null}
 

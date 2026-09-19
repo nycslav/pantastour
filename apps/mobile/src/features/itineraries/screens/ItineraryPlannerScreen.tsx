@@ -31,7 +31,7 @@ import {
   itineraryGateway,
   pendingItineraryStore,
   premiumAccessGateway,
-} from '../services/mockAdapters';
+} from '../services/adapters';
 
 const durations = [3, 5, 7] as const;
 const budgets: readonly Budget[] = ['Budget', 'Comfort', 'Premium'];
@@ -43,6 +43,7 @@ export function ItineraryPlannerScreen() {
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
   const [destinationName, setDestinationName] = useState<string>();
+  const [destinationError, setDestinationError] = useState<string | null>(null);
   const [status, setStatus] = useState<ItineraryStatus>('idle');
   const [durationDays, setDurationDays] = useState<3 | 5 | 7>(3);
   const [budget, setBudget] = useState<Budget>('Comfort');
@@ -51,13 +52,19 @@ export function ItineraryPlannerScreen() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>(['Nature', 'Local food', 'Culture']);
   const [accessibilityNeeds, setAccessibilityNeeds] = useState('No special requirements');
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [premiumError, setPremiumError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<GeneratedItinerary | null>(null);
   const [activeDay, setActiveDay] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    void destinationGateway.getById(destinationId).then((destination) => setDestinationName(destination?.name));
+    void destinationGateway.getById(destinationId)
+      .then((destination) => {
+        if (destination) setDestinationName(destination.name);
+        else setDestinationError('This destination is unavailable.');
+      })
+      .catch(() => setDestinationError('The destination service is unavailable. Check the API configuration and try again.'));
     void pendingItineraryStore.load().then((pending) => {
       if (!pending || pending.destinationId !== destinationId) return;
       setStartingPoint(pending.startingPoint);
@@ -110,17 +117,19 @@ export function ItineraryPlannerScreen() {
     }
     setStatus('checking-access');
     setFieldError(null);
+    setPremiumError(null);
     await pendingItineraryStore.save(parsed.data);
-    const entitlement = await premiumAccessGateway.getEntitlement();
-    if (entitlement === 'active') await generate(parsed.data);
-    else setStatus('awaiting-premium');
-  };
-
-  const continueFromPaywall = async () => {
-    setStatus('checking-access');
-    const entitlement = await premiumAccessGateway.requestPurchase();
-    if (entitlement === 'active') await generate(preferences);
-    else setStatus('awaiting-premium');
+    try {
+      const entitlement = await premiumAccessGateway.getEntitlement();
+      if (entitlement === 'active') await generate(parsed.data);
+      else {
+        setPremiumError('Premium access is required, but purchases are unavailable in this build.');
+        setStatus('awaiting-premium');
+      }
+    } catch {
+      setPremiumError('Premium access is unavailable until the RevenueCat integration is configured.');
+      setStatus('awaiting-premium');
+    }
   };
 
   const toggleInterest = (interest: string) => {
@@ -128,6 +137,15 @@ export function ItineraryPlannerScreen() {
       current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest],
     );
   };
+
+  if (destinationError) {
+    return (
+      <Screen contentContainerStyle={styles.centeredScreen}>
+        <StatusPanel message={destinationError} title="Destination service unavailable" tone="error" />
+        <Button label="Back to Discover" onPress={() => router.replace('/(tabs)/discover')} />
+      </Screen>
+    );
+  }
 
   if (!destinationName) return <Screen><LoadingState label="Preparing trip choices…" /></Screen>;
 
@@ -140,13 +158,12 @@ export function ItineraryPlannerScreen() {
       <Screen contentContainerStyle={styles.centeredScreen}>
         <Mascot mood="star" size={150} />
         <Text accessibilityRole="header" style={styles.centerTitle}>Unlock your {destinationName} itinerary</Text>
-        <Text style={styles.centerBody}>Your preferences are saved. RevenueCat will replace this mock handoff without changing the planning screen.</Text>
+        <Text style={styles.centerBody}>{premiumError ?? 'Premium access is required to generate this itinerary.'}</Text>
         <StatusPanel
           message={`${durationDays} days · ${budget} · ${pace}\n${selectedInterests.join(' · ')}`}
           title="Pending itinerary"
           tone="warning"
         />
-        <Button icon={Sparkles} label="Continue mock premium handoff" onPress={() => void continueFromPaywall()} />
         <Button label="Back to preferences" onPress={() => setStatus('idle')} variant="secondary" />
       </Screen>
     );
@@ -176,7 +193,7 @@ export function ItineraryPlannerScreen() {
     return (
       <Screen contentContainerStyle={styles.centeredScreen}>
         <StatusPanel
-          message={status === 'cancelled' ? 'Your preferences are still available.' : 'The mock itinerary service could not finish this request.'}
+          message={status === 'cancelled' ? 'Your preferences are still available.' : 'The itinerary service could not finish this request. Check the API connection and try again.'}
           title={status === 'cancelled' ? 'Generation cancelled' : 'We hit a detour'}
           tone={status === 'cancelled' ? 'warning' : 'error'}
         />
@@ -219,7 +236,7 @@ export function ItineraryPlannerScreen() {
             </View>
           );
         })}
-        {saved ? <StatusPanel message="The production API will persist this plan when Member 2 connects the itinerary endpoint." title="Itinerary saved locally for this demo" tone="success" /> : null}
+        {saved ? <StatusPanel message="Your itinerary was saved through the Saraya API." title="Itinerary saved" tone="success" /> : null}
         <View style={styles.actions}>
           <Button
             icon={Check}
@@ -227,7 +244,10 @@ export function ItineraryPlannerScreen() {
             loading={saving}
             onPress={() => {
               setSaving(true);
-              void itineraryGateway.save(itinerary).then(() => { setSaved(true); setSaving(false); });
+              void itineraryGateway.save(itinerary)
+                .then(() => setSaved(true))
+                .catch(() => setStatus('error'))
+                .finally(() => setSaving(false));
             }}
             style={styles.primaryAction}
           />
