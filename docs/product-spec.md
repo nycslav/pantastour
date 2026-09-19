@@ -52,7 +52,7 @@ Premium features unlock advanced capabilities including offline functionality, A
 - **Caching:** Redis for location-based queries and session management
 - **Maps:** Google Maps behind a backend adapter; an alternative provider may be substituted
 - **Notifications:** Firebase Cloud Messaging
-- **Subscriptions:** RevenueCat
+- **Monetization:** RevenueCat lifetime Premium and consumable generation packs
 - **Cloud:** AWS, Google Cloud, or Firebase for hosting and storage
 
 The repository is organized as an npm-workspace monorepo. Executable applications live in `apps/`, shared HTTP contracts and client code live in `packages/`, database assets live in `database/`, and engineering documentation lives in `docs/`. See [Architecture](architecture.md) and [Ownership](ownership.md) for the current boundaries.
@@ -71,6 +71,19 @@ Full access to MVP features including personalized discovery, bucket lists, trav
 
 **Premium Users:**
 Access to all features including offline mode, AI itinerary generation, hidden gems database, collaborative group trips, and ad-free experience.
+
+### Monetization and itinerary quotas
+
+- Free registered accounts receive 3 successful itinerary generations for the lifetime of the account.
+- Premium is a one-time lifetime purchase. Ownership does not expire or renew.
+- Lifetime Premium includes 10 successful itinerary generations per UTC calendar month and enables
+  Premium-only features, including itinerary regeneration.
+- A consumable pack adds 10 generation credits without granting Premium. Its intended base store
+  configuration is USD $5, while the app displays the localized store price returned by RevenueCat.
+- Included credits are consumed before purchased credits. Purchased credits survive calendar-month
+  resets. Failed or cancelled generation requests do not consume a credit.
+- Authentication and the API must enforce quota atomically per account. Mobile-local quota storage
+  is acceptable only for the current demonstration and is not a security boundary.
 
 ### Authentication Methods:
 
@@ -252,7 +265,7 @@ Curated list of saved destinations and activities. Organizable by region, priori
 Calendar view of Philippines festivals. Regional filters. Event detail cards with descriptions, dates, survival guides. Push notification settings per event.
 
 **Tab 5: Profile & Settings**
-User profile information and photo. Achievement badges and statistics. Trip history. Preferences and settings. Premium subscription management. Safety alert settings. Logout option.
+User profile information and photo. Achievement badges and statistics. Trip history. Preferences and settings. Lifetime Premium purchase and generation-balance management. Safety alert settings. Logout option.
 
 ### 6.3 Detail Screens
 
@@ -374,7 +387,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - PAGASA API (weather and safety alerts)
 - Google Maps API (mapping and directions)
 - Google/Facebook OAuth (authentication)
-- RevenueCat SDK (In-App Purchases & Subscription Management via Google Play Billing and Apple App Store)
+- RevenueCat SDK (lifetime and consumable in-app purchases through Google Play Billing and Apple App Store)
 - Firebase Cloud Messaging (push notifications)
 - OpenAI API (AI itinerary generation - premium)
 
@@ -394,7 +407,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 ### Core Data Models:
 
 **User**
-- id, email, password_hash, phone, first_name, last_name, profile_photo_url, travel_style, budget_range, favorite_regions, created_at, updated_at, last_login, is_premium, premium_expiry, revenuecat_app_user_id
+- id, email, password_hash, phone, first_name, last_name, profile_photo_url, travel_style, budget_range, favorite_regions, created_at, updated_at, last_login, is_premium, premium_acquired_at, revenuecat_app_user_id
 
 **Destination**
 - id, name, category, description, historical_context, location (PostGIS Point), region, latitude, longitude, thumbnail_image, photos[], rating, review_count, is_hidden_gem (premium), created_at
@@ -503,11 +516,15 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - Distance calculations for location-based filtering
 - Offline maps for premium users (downloaded tile data)
 
-### Payment & Subscription
+### Payment, Premium, and generation quota
 
-- RevenueCat SDK for cross-platform auto-renewable subscription wrapping.
-- Google Play Console & Apple App Store Connect configuration for sandbox testing.
-- RevenueCat Webhooks to automatically sync subscription states (Entitlements) with the backend database.
+- RevenueCat SDK for a non-consumable lifetime Premium purchase and a consumable 10-generation pack.
+- The `saraya_premium` entitlement represents permanent Premium ownership; the consumable does not
+  attach to that entitlement.
+- Google Play Console and Apple App Store Connect configuration for sandbox testing.
+- RevenueCat webhooks synchronize lifetime ownership and idempotently credit consumable purchases.
+- The authenticated itinerary endpoint atomically verifies and consumes one generation only after
+  successful generation. Premium included quota resets at 00:00 UTC on the first day of each month.
 
 ### AI Itinerary Generation
 
@@ -554,7 +571,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 **Hours 24-36 (if extended hackathon):**
 
 - Begin one premium feature (group trips or AI itinerary)
-- Integrate RevenueCat SDK, configure Google Play/App Store sandbox environments, and implement a paywall screen to unlock Entitlements.
+- Integrate RevenueCat SDK, configure store sandbox environments, and implement lifetime Premium and generation top-up purchases.
 - Performance optimization
 - Prepare demo and presentation materials
 
@@ -569,7 +586,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - ✓ Festival/events display with basic data
 - ✓ Achievement system with 5-10 sample achievements
 - ✓ Location-based filtering working
-- ✓ RevenueCat SDK integrated with at least one active Entitlement for sandbox testing
+- ✓ RevenueCat SDK integrated with the lifetime Premium entitlement and generation-pack sandbox products
 - ✓ Fully functional demo recording (2-3 minutes)
 - ✓ Documentation and architecture overview
 

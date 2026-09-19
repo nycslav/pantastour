@@ -1,32 +1,37 @@
-export type PremiumEntitlement = 'inactive' | 'active' | 'expired';
+import type { PremiumAccess } from '@saraya/contracts';
 
-export type SubscriptionPackage = {
+export type PremiumProductKind = 'lifetime-premium' | 'generation-top-up';
+
+export type PremiumProduct = {
   id: string;
   productId: string;
-  title: string;
-  description: string;
   price: string;
-  period: string | null;
-  recommended: boolean;
+  kind: PremiumProductKind;
 };
 
-export interface SubscriptionGateway {
-  getEntitlement(): Promise<PremiumEntitlement>;
-  getPackages(): Promise<SubscriptionPackage[]>;
-  purchase(packageId: string): Promise<PremiumEntitlement>;
-  restore(): Promise<PremiumEntitlement>;
+export type PremiumPurchaseResult = {
+  access: PremiumAccess;
+  kind: PremiumProductKind;
+  transactionId: string;
+};
+
+export interface PremiumGateway {
+  getAccess(): Promise<PremiumAccess>;
+  getProducts(): Promise<PremiumProduct[]>;
+  purchase(productId: string): Promise<PremiumPurchaseResult>;
+  restore(): Promise<PremiumAccess>;
 }
 
-export class SubscriptionCancelledError extends Error {
+export class PurchaseCancelledError extends Error {
   constructor() {
     super('Purchase cancelled.');
-    this.name = 'SubscriptionCancelledError';
+    this.name = 'PurchaseCancelledError';
   }
 }
 
-export class SubscriptionConfigurationError extends Error {
-  constructor(message = 'Subscriptions are not configured for this build.') {
+export class PurchaseConfigurationError extends Error {
+  constructor(message = 'Premium purchases are not configured for this build.') {
     super(message);
-    this.name = 'SubscriptionConfigurationError';
+    this.name = 'PurchaseConfigurationError';
   }
 }

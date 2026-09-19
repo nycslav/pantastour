@@ -23,17 +23,23 @@ EXPO_PUBLIC_DATA_MODE=api
 EXPO_PUBLIC_API_BASE_URL=http://<reachable-host>:3000
 ```
 
-Use `EXPO_PUBLIC_MOCK_PREMIUM=true` to exercise the existing-premium path. When false or omitted, the
-mock adapter demonstrates the free-user handoff that Member 3's RevenueCat adapter will replace.
+The current demo uses RevenueCat for purchase state and a provider-neutral local quota adapter.
+Free users can successfully generate 3 itineraries before seeing the paywall; lifetime Premium has
+10 included generations per UTC calendar month. Local quota state is not secure account-level
+enforcement and must be replaced by the authenticated API adapter when the backend is available.
 
 ## RevenueCat and Android delivery
 
-RevenueCat is initialized once by the root layout and accessed through the subscriptions gateway.
+RevenueCat is initialized once by the root layout and accessed through the Premium gateway.
 For local and EAS builds, configure `EXPO_PUBLIC_REVENUECAT_API_KEY` and
 `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`. The legacy
 `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY` remains accepted for existing local environments, but new
 configuration should use the environment-neutral name. Production requires the RevenueCat Android
 public SDK key and rejects a Test Store key.
+
+The configured identifiers are `saraya_premium`, `saraya_premium_lifetime`,
+`saraya_generations_10`, and offering `default`. See `docs/integrations.md` for package mapping and
+quota behavior.
 
 Android delivery profiles, EAS environment setup, APK/AAB commands, signing, and the Google Play
 internal-testing checklist are documented in [`docs/android-delivery.md`](../../docs/android-delivery.md).

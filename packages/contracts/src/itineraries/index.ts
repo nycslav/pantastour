@@ -40,7 +40,7 @@ export const generatedItinerarySchema = z.object({
 export const itineraryStatusSchema = z.enum([
   'idle',
   'checking-access',
-  'awaiting-premium',
+  'awaiting-purchase',
   'generating',
   'ready',
   'error',

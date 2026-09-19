@@ -1,73 +1,80 @@
+import type { PremiumAccess } from '@saraya/contracts';
+
 import {
-  SubscriptionCancelledError,
-  type PremiumEntitlement,
-  type SubscriptionGateway,
-  type SubscriptionPackage,
+  PurchaseCancelledError,
+  type PremiumGateway,
+  type PremiumProduct,
 } from './subscription.gateway';
 
-export const mockSubscriptionPackages: SubscriptionPackage[] = [
+export const mockPremiumProducts: PremiumProduct[] = [
   {
-    id: '$rc_monthly',
-    productId: 'saraya_premium_monthly',
-    title: 'Monthly',
-    description: 'Flexible Premium access, renewed monthly.',
-    price: '₱149.00',
-    period: 'P1M',
-    recommended: false,
+    id: 'saraya_premium_lifetime',
+    productId: 'saraya_premium_lifetime',
+    price: '$39.99',
+    kind: 'lifetime-premium',
   },
   {
-    id: '$rc_annual',
-    productId: 'saraya_premium_annual',
-    title: 'Annual',
-    description: 'A full year of Premium travel planning.',
-    price: '₱1,190.00',
-    period: 'P1Y',
-    recommended: true,
+    id: 'saraya_generations_10',
+    productId: 'saraya_generations_10',
+    price: '$5.00',
+    kind: 'generation-top-up',
   },
 ];
 
-type MockSubscriptionOptions = {
-  entitlement?: PremiumEntitlement;
-  packages?: SubscriptionPackage[];
+type MockPremiumOptions = {
+  access?: PremiumAccess;
+  products?: PremiumProduct[];
   restorable?: boolean;
   cancelNextPurchase?: boolean;
+  failNextPurchase?: boolean;
 };
 
-export class MockSubscriptionGateway implements SubscriptionGateway {
-  private entitlement: PremiumEntitlement;
-  private readonly packages: SubscriptionPackage[];
+export class MockPremiumGateway implements PremiumGateway {
+  private access: PremiumAccess;
+  private readonly products: PremiumProduct[];
   private readonly restorable: boolean;
   private cancelNextPurchase: boolean;
+  private failNextPurchase: boolean;
+  private transaction = 0;
 
-  constructor(options: MockSubscriptionOptions = {}) {
-    this.entitlement = options.entitlement ?? 'inactive';
-    this.packages = options.packages ?? mockSubscriptionPackages;
+  constructor(options: MockPremiumOptions = {}) {
+    this.access = options.access ?? 'free';
+    this.products = options.products ?? mockPremiumProducts;
     this.restorable = options.restorable ?? false;
     this.cancelNextPurchase = options.cancelNextPurchase ?? false;
+    this.failNextPurchase = options.failNextPurchase ?? false;
   }
 
-  async getEntitlement() {
-    return this.entitlement;
+  async getAccess() {
+    return this.access;
   }
 
-  async getPackages() {
-    return this.packages;
+  async getProducts() {
+    return this.products;
   }
 
-  async purchase(packageId: string) {
-    if (!this.packages.some((subscriptionPackage) => subscriptionPackage.id === packageId)) {
-      throw new Error('The selected subscription package is unavailable.');
-    }
+  async purchase(productId: string) {
+    const product = this.products.find((candidate) => candidate.id === productId);
+    if (!product) throw new Error('The selected purchase is unavailable.');
     if (this.cancelNextPurchase) {
       this.cancelNextPurchase = false;
-      throw new SubscriptionCancelledError();
+      throw new PurchaseCancelledError();
     }
-    this.entitlement = 'active';
-    return this.entitlement;
+    if (this.failNextPurchase) {
+      this.failNextPurchase = false;
+      throw new Error('Store unavailable.');
+    }
+    if (product.kind === 'lifetime-premium') this.access = 'premium';
+    this.transaction += 1;
+    return {
+      access: this.access,
+      kind: product.kind,
+      transactionId: `mock-transaction-${this.transaction}`,
+    };
   }
 
   async restore() {
-    if (this.restorable) this.entitlement = 'active';
-    return this.entitlement;
+    if (this.restorable) this.access = 'premium';
+    return this.access;
   }
 }

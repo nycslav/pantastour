@@ -344,11 +344,11 @@ The Compose setup is for local development only. Secrets must remain in an untra
 | `apps/mobile/app/festivals/[id].tsx` | Member 3 | Festival history, schedule, travel information, and survival guide |
 | `apps/mobile/app/alerts/index.tsx` | Member 3 | Active safety-alert list |
 | `apps/mobile/app/alerts/[id].tsx` | Member 3 | Alert severity, affected areas, advice, and alternatives |
-| `apps/mobile/app/premium/paywall.tsx` | Member 3 | Premium plans, RevenueCat packages, purchase, and restore controls |
+| `apps/mobile/app/premium/paywall.tsx` | Member 3 | Lifetime Premium, generation top-up, localized pricing, purchase, and restore controls |
 | `apps/mobile/src/features/festivals/` | Member 3 | Festival calendar, details, filters, and reminders |
 | `apps/mobile/src/features/safety-alerts/` | Member 3 | Weather and safety alert components, state, and API calls |
 | `apps/mobile/src/features/notifications/` | Member 3 | Device registration, notification preferences, and deep-link handling |
-| `apps/mobile/src/features/subscriptions/` | Member 3 | RevenueCat entitlement and paywall logic |
+| `apps/mobile/src/features/subscriptions/` | Member 3 | RevenueCat lifetime entitlement, generation quota boundary, purchase, and paywall logic |
 | `apps/mobile/src/features/festivals/components/` | Member 3 | Festival cards, calendar, filters, and survival-guide sections |
 | `apps/mobile/src/features/safety-alerts/components/` | Member 3 | Alert cards, severity indicators, maps, and advice panels |
 
@@ -439,7 +439,7 @@ Hidden gems must be protected by backend authorization, not merely hidden in the
 | --- | --- | --- |
 | `subscriptions` entitlement service or middleware | Member 3 | Exposes one reusable server-side function that determines whether the authenticated user has an active premium entitlement |
 | `destinations` query and response shaping | Member 1 | Calls Member 3's entitlement function before including destinations where `is_hidden_gem = true` |
-| Hidden-gem endpoint tests | Member 1 | Member 3 reviews free, expired, active-premium, and webhook-update cases |
+| Hidden-gem endpoint tests | Member 1 | Member 3 reviews free, lifetime-Premium, and webhook-update cases |
 | RevenueCat webhook tests | Member 3 | Member 1 reviews whether destination visibility changes after entitlement synchronization |
 
 The `destinations` module must depend on a narrow entitlement interface rather than importing RevenueCat-specific code directly. This keeps destination rules testable and prevents the external subscription provider from leaking into discovery logic.

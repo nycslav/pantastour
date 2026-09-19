@@ -1,3 +1,4 @@
+import type { GenerationQuota, PremiumAccess } from '@saraya/contracts';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, Crown, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -6,30 +7,37 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, LoadingState, Mascot, Screen, StatusPanel } from '@/ui/components';
 import { colors, radius, shadows, spacing, type } from '@/ui/theme';
 
-import { SubscriptionCancelledError, type SubscriptionPackage } from '../gateways/subscription.gateway';
-import { subscriptionGateway } from '../gateways/revenuecat-subscription.gateway';
+import { PurchaseCancelledError, type PremiumProduct, type PremiumProductKind } from '../gateways/subscription.gateway';
+import { premiumGateway } from '../gateways/revenuecat-subscription.gateway';
+import { generationQuotaGateway } from '../services/local-generation-quota';
 
 type PaywallState = 'loading' | 'ready' | 'purchasing' | 'restoring' | 'success' | 'error';
 
 async function loadPaywallData() {
-  const [entitlement, availablePackages] = await Promise.all([
-    subscriptionGateway.getEntitlement(),
-    subscriptionGateway.getPackages(),
+  const [access, products] = await Promise.all([
+    premiumGateway.getAccess(),
+    premiumGateway.getProducts(),
   ]);
-  return { entitlement, availablePackages };
+  return { access, products, quota: await generationQuotaGateway.getQuota(access) };
 }
 
 export function PaywallScreen() {
   const { destinationId = 'south-cebu' } = useLocalSearchParams<{ destinationId?: string }>();
   const router = useRouter();
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [selectedPackageId, setSelectedPackageId] = useState<string>();
+  const [products, setProducts] = useState<PremiumProduct[]>([]);
+  const [access, setAccess] = useState<PremiumAccess>('free');
+  const [quota, setQuota] = useState<GenerationQuota>();
   const [state, setState] = useState<PaywallState>('loading');
+  const [purchasingKind, setPurchasingKind] = useState<PremiumProductKind>();
   const [message, setMessage] = useState<string>();
 
-  const selectedPackage = useMemo(
-    () => packages.find((subscriptionPackage) => subscriptionPackage.id === selectedPackageId),
-    [packages, selectedPackageId],
+  const lifetimeProduct = useMemo(
+    () => products.find((product) => product.kind === 'lifetime-premium'),
+    [products],
+  );
+  const topUpProduct = useMemo(
+    () => products.find((product) => product.kind === 'generation-top-up'),
+    [products],
   );
   const busy = state === 'purchasing' || state === 'restoring';
 
@@ -40,26 +48,16 @@ export function PaywallScreen() {
     });
   }, [destinationId, router]);
 
-  const applyPaywallData = useCallback(({
-    entitlement,
-    availablePackages,
-  }: Awaited<ReturnType<typeof loadPaywallData>>) => {
+  const applyPaywallData = useCallback((data: Awaited<ReturnType<typeof loadPaywallData>>) => {
+    setAccess(data.access);
+    setProducts(data.products);
+    setQuota(data.quota);
     setMessage(undefined);
-    setPackages(availablePackages);
-    setSelectedPackageId(
-      availablePackages.find((subscriptionPackage) => subscriptionPackage.recommended)?.id ??
-        availablePackages[0]?.id,
-    );
-    if (entitlement === 'active') {
-      setMessage('Premium is already active for this account.');
-      setState('success');
-    } else {
-      setState('ready');
-    }
+    setState('ready');
   }, []);
 
   const handleLoadError = useCallback(() => {
-    setMessage('Plans could not be loaded. Check your connection and RevenueCat configuration.');
+    setMessage('Purchase options could not be loaded. Check your connection and RevenueCat configuration.');
     setState('error');
   }, []);
 
@@ -78,27 +76,41 @@ export function PaywallScreen() {
     void loadPaywallData().then(applyPaywallData, handleLoadError);
   };
 
-  const purchase = async () => {
-    if (!selectedPackage) return;
+  const purchase = async (product: PremiumProduct) => {
     setState('purchasing');
+    setPurchasingKind(product.kind);
     setMessage(undefined);
     try {
-      const entitlement = await subscriptionGateway.purchase(selectedPackage.id);
-      if (entitlement !== 'active') {
-        setMessage('The purchase finished, but Premium is not active yet. Try restoring your purchase.');
-        setState('error');
-        return;
+      const result = await premiumGateway.purchase(product.id);
+      if (result.kind === 'lifetime-premium') {
+        if (result.access !== 'premium') {
+          setMessage('The purchase finished, but lifetime Premium is not active yet. Try restoring it.');
+          setState('error');
+          return;
+        }
+        const refreshedQuota = await generationQuotaGateway.getQuota('premium');
+        setAccess('premium');
+        setQuota(refreshedQuota);
+        setMessage('Lifetime Premium is active. You have 10 included generations this calendar month.');
+      } else {
+        const credited = await generationQuotaGateway.creditTopUp(result.access, result.transactionId);
+        setAccess(result.access);
+        setQuota(credited.quota);
+        setMessage(credited.credited
+          ? '10 itinerary generations were added to your purchased balance.'
+          : 'This purchase was already credited. Your balance was not changed again.');
       }
-      setMessage('Premium is active. Your saved trip choices are ready.');
       setState('success');
     } catch (error) {
-      if (error instanceof SubscriptionCancelledError) {
+      if (error instanceof PurchaseCancelledError) {
         setMessage('Purchase cancelled. Your trip choices are still saved.');
         setState('ready');
       } else {
-        setMessage('The purchase could not be completed. No charge was made.');
+        setMessage('The purchase could not be completed. Try again when you are ready.');
         setState('error');
       }
+    } finally {
+      setPurchasingKind(undefined);
     }
   };
 
@@ -106,22 +118,24 @@ export function PaywallScreen() {
     setState('restoring');
     setMessage(undefined);
     try {
-      const entitlement = await subscriptionGateway.restore();
-      if (entitlement === 'active') {
-        setMessage('Your previous purchase was restored and Premium is active.');
+      const restoredAccess = await premiumGateway.restore();
+      if (restoredAccess === 'premium') {
+        setAccess('premium');
+        setQuota(await generationQuotaGateway.getQuota('premium'));
+        setMessage('Your lifetime Premium purchase was restored.');
         setState('success');
       } else {
-        setMessage('No active Premium purchase was found for this store account.');
+        setMessage('No lifetime Premium purchase was found for this store account.');
         setState('ready');
       }
     } catch {
-      setMessage('Purchases could not be restored. Check your connection and try again.');
+      setMessage('Lifetime Premium could not be restored. Check your connection and try again.');
       setState('error');
     }
   };
 
   if (state === 'loading') {
-    return <Screen><LoadingState label="Loading Premium plans…" /></Screen>;
+    return <Screen><LoadingState label="Loading purchase options…" /></Screen>;
   }
 
   if (state === 'success') {
@@ -129,8 +143,9 @@ export function PaywallScreen() {
       <Screen contentContainerStyle={styles.centered}>
         <Mascot mood="star" size={156} />
         <View style={styles.successIcon}><Check color={colors.white} size={30} strokeWidth={3} /></View>
-        <Text accessibilityRole="header" style={styles.title}>Welcome to Saraya Premium</Text>
+        <Text accessibilityRole="header" style={styles.title}>Your itinerary is ready to continue</Text>
         <Text style={styles.subtitle}>{message}</Text>
+        {quota ? <QuotaSummary quota={quota} /> : null}
         <Button icon={Sparkles} label="Continue to my itinerary" onPress={continueToItinerary} />
       </Screen>
     );
@@ -145,93 +160,113 @@ export function PaywallScreen() {
       <View style={styles.hero}>
         <View style={styles.heroCopy}>
           <View style={styles.eyebrow}><Crown color={colors.yellow} size={18} /><Text style={styles.eyebrowText}>SARAYA PREMIUM</Text></View>
-          <Text accessibilityRole="header" style={styles.title}>Make every trip easier to plan</Text>
-          <Text style={styles.subtitle}>Unlock premium itinerary generation while keeping your saved trip preferences.</Text>
+          <Text accessibilityRole="header" style={styles.title}>Keep planning your trip</Text>
+          <Text style={styles.subtitle}>Choose lifetime Premium or add more itinerary generations. Prices come directly from the store.</Text>
         </View>
         <Mascot mood="star" size={116} />
       </View>
 
-      <View style={styles.benefits}>
-        {['Premium itinerary generation', 'Plans shaped around your pace and budget', 'Restore access on your other devices'].map((benefit) => (
-          <View key={benefit} style={styles.benefitRow}>
-            <View style={styles.check}><Check color={colors.navy} size={15} strokeWidth={3} /></View>
-            <Text style={styles.benefitText}>{benefit}</Text>
-          </View>
-        ))}
+      <View style={styles.comparison}>
+        <PlanSummary
+          title="Free"
+          benefits={['3 lifetime itinerary generations', 'No refresh or regeneration', 'Limited Premium feature access']}
+        />
+        <PlanSummary
+          featured
+          title="Premium — Lifetime"
+          benefits={['One-time purchase', 'Permanent Premium feature access', '10 generations every calendar month']}
+        />
       </View>
 
-      {packages.length === 0 ? (
-        <StatusPanel
-          action={<Button icon={RefreshCw} label="Try again" onPress={reload} variant="secondary" />}
-          message="RevenueCat returned no packages for the current offering. Add packages in the RevenueCat dashboard and retry."
-          title="No plans available"
-          tone="warning"
+      {quota ? <QuotaSummary quota={quota} /> : null}
+
+      {access === 'free' ? (
+        <PurchaseCard
+          buttonLabel={lifetimeProduct ? `Unlock Lifetime Premium — ${lifetimeProduct.price}` : 'Lifetime Premium unavailable'}
+          description="Permanent Premium access and 10 included itinerary generations each calendar month."
+          disabled={!lifetimeProduct || busy}
+          loading={purchasingKind === 'lifetime-premium'}
+          onPress={() => { if (lifetimeProduct) void purchase(lifetimeProduct); }}
+          title="Premium — Lifetime"
         />
       ) : (
-        <View accessibilityRole="radiogroup" style={styles.planList}>
-          {packages.map((subscriptionPackage) => {
-            const selected = subscriptionPackage.id === selectedPackageId;
-            return (
-              <Pressable
-                accessibilityLabel={`${subscriptionPackage.title}, ${subscriptionPackage.price}`}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selected }}
-                key={subscriptionPackage.id}
-                onPress={() => setSelectedPackageId(subscriptionPackage.id)}
-                style={[styles.plan, selected && styles.planSelected]}
-              >
-                <View style={[styles.radio, selected && styles.radioSelected]}>{selected ? <View style={styles.radioDot} /> : null}</View>
-                <View style={styles.planCopy}>
-                  <View style={styles.planTitleRow}>
-                    <Text style={styles.planTitle}>{subscriptionPackage.title}</Text>
-                    {subscriptionPackage.recommended ? <Text style={styles.recommended}>BEST VALUE</Text> : null}
-                  </View>
-                  <Text style={styles.planDescription}>{subscriptionPackage.description}</Text>
-                </View>
-                <View style={styles.priceBlock}>
-                  <Text style={styles.price}>{subscriptionPackage.price}</Text>
-                  <Text style={styles.period}>{formatPeriod(subscriptionPackage.period)}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        <StatusPanel message="Lifetime Premium is permanently active for this account." title="Premium owned" tone="success" />
       )}
+
+      <PurchaseCard
+        buttonLabel={topUpProduct ? `Add 10 generations — ${topUpProduct.price}` : 'Generation pack unavailable'}
+        description="A one-time consumable purchase. Credits remain available across monthly Premium resets and do not grant Premium."
+        disabled={!topUpProduct || busy}
+        loading={purchasingKind === 'generation-top-up'}
+        onPress={() => { if (topUpProduct) void purchase(topUpProduct); }}
+        title="10 More Itinerary Generations"
+      />
+
+      {products.length === 0 ? (
+        <StatusPanel
+          action={<Button icon={RefreshCw} label="Try again" onPress={reload} variant="secondary" />}
+          message="RevenueCat returned neither configured package from the default offering."
+          title="No purchase options available"
+          tone="warning"
+        />
+      ) : null}
 
       {message ? (
         <StatusPanel
           message={message}
-          title={state === 'error' ? 'Premium could not be activated' : 'Purchase update'}
+          title={state === 'error' ? 'Purchase not completed' : 'Purchase update'}
           tone={state === 'error' ? 'error' : 'warning'}
         />
       ) : null}
 
       <Button
-        icon={ShieldCheck}
-        label={selectedPackage ? `Continue with ${selectedPackage.title}` : 'Choose a Premium plan'}
-        disabled={!selectedPackage || busy}
-        loading={state === 'purchasing'}
-        onPress={() => void purchase()}
-      />
-      <Button
         icon={RefreshCw}
-        label="Restore purchases"
+        label="Restore Lifetime Premium"
         disabled={busy}
         loading={state === 'restoring'}
         onPress={() => void restore()}
         variant="secondary"
       />
-      {state === 'error' ? <Button label="Reload plans" onPress={reload} variant="quiet" /> : null}
-      <Text style={styles.legal}>Payment is handled by the configured store. Subscriptions renew according to the selected store product until cancelled.</Text>
+      {state === 'error' ? <Button label="Reload purchase options" onPress={reload} variant="quiet" /> : null}
+      <Text style={styles.legal}>Payment is handled by the configured store. Lifetime Premium is non-consumable; generation packs are consumable and cannot be restored by the Restore button.</Text>
     </Screen>
   );
 }
 
-function formatPeriod(period: string | null) {
-  if (period === 'P1W') return 'per week';
-  if (period === 'P1M') return 'per month';
-  if (period === 'P1Y') return 'per year';
-  return period ? 'subscription' : 'one-time';
+function PlanSummary({ benefits, featured = false, title }: { benefits: string[]; featured?: boolean; title: string }) {
+  return (
+    <View style={[styles.summaryCard, featured && styles.summaryCardFeatured]}>
+      <Text style={styles.summaryTitle}>{title}</Text>
+      {benefits.map((benefit) => <Text key={benefit} style={styles.summaryText}>• {benefit}</Text>)}
+    </View>
+  );
+}
+
+function QuotaSummary({ quota }: { quota: GenerationQuota }) {
+  return (
+    <StatusPanel
+      message={`${quota.includedRemaining} included · ${quota.topUpRemaining} purchased`}
+      title="Generation balance"
+      tone={quota.canGenerate ? 'success' : 'warning'}
+    />
+  );
+}
+
+function PurchaseCard({ buttonLabel, description, disabled, loading, onPress, title }: {
+  buttonLabel: string;
+  description: string;
+  disabled: boolean;
+  loading: boolean;
+  onPress: () => void;
+  title: string;
+}) {
+  return (
+    <View style={styles.purchaseCard}>
+      <Text style={styles.purchaseTitle}>{title}</Text>
+      <Text style={styles.purchaseDescription}>{description}</Text>
+      <Button icon={ShieldCheck} label={buttonLabel} disabled={disabled} loading={loading} onPress={onPress} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -243,24 +278,14 @@ const styles = StyleSheet.create({
   eyebrowText: { color: colors.violet, fontFamily: type.black, fontSize: 11, letterSpacing: 0.8 },
   title: { color: colors.navy, fontFamily: type.black, fontSize: 28, lineHeight: 34, textAlign: 'center' },
   subtitle: { color: colors.muted, fontFamily: type.medium, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  benefits: { gap: spacing.md },
-  benefitRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  check: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.greenSoft },
-  benefitText: { flex: 1, color: colors.navy, fontFamily: type.bold, fontSize: 14 },
-  planList: { gap: spacing.md },
-  plan: { minHeight: 96, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, ...shadows.card },
-  planSelected: { borderColor: colors.blue, backgroundColor: colors.blueSoft },
-  radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  radioSelected: { borderColor: colors.blue },
-  radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.blue },
-  planCopy: { flex: 1, gap: 3 },
-  planTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
-  planTitle: { color: colors.navy, fontFamily: type.black, fontSize: 17 },
-  planDescription: { color: colors.muted, fontFamily: type.medium, fontSize: 12, lineHeight: 17 },
-  recommended: { color: colors.navy, backgroundColor: colors.yellow, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 3, fontFamily: type.black, fontSize: 9 },
-  priceBlock: { alignItems: 'flex-end', gap: 2 },
-  price: { color: colors.navy, fontFamily: type.black, fontSize: 16 },
-  period: { color: colors.muted, fontFamily: type.medium, fontSize: 10 },
+  comparison: { gap: spacing.md },
+  summaryCard: { gap: spacing.xs, padding: spacing.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  summaryCardFeatured: { borderColor: colors.violet, backgroundColor: colors.violetSoft },
+  summaryTitle: { color: colors.navy, fontFamily: type.black, fontSize: 17 },
+  summaryText: { color: colors.muted, fontFamily: type.medium, fontSize: 13, lineHeight: 19 },
+  purchaseCard: { gap: spacing.sm, padding: spacing.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, ...shadows.card },
+  purchaseTitle: { color: colors.navy, fontFamily: type.black, fontSize: 18 },
+  purchaseDescription: { color: colors.muted, fontFamily: type.medium, fontSize: 13, lineHeight: 19 },
   successIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green },
   legal: { color: colors.muted, fontFamily: type.medium, fontSize: 11, lineHeight: 16, textAlign: 'center' },
 });

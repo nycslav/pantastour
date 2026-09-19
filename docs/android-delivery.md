@@ -36,7 +36,10 @@ Each build profile reads the EAS environment with the same name: `development`, 
 | `EXPO_PUBLIC_DATA_MODE` | `mock` or `api` | `mock` or `api` | `api` |
 | `EXPO_PUBLIC_API_BASE_URL` | Reachable development API | Staging/demo API | Production HTTPS API |
 | `EXPO_PUBLIC_REVENUECAT_API_KEY` | RevenueCat Test Store key | RevenueCat Test Store key | Android public SDK key (`goog_...`) |
-| `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID` | Entitlement identifier | Entitlement identifier | Entitlement identifier |
+| `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID` | `saraya_premium` | `saraya_premium` | `saraya_premium` |
+| `EXPO_PUBLIC_REVENUECAT_OFFERING_ID` | `default` | `default` | `default` |
+| `EXPO_PUBLIC_REVENUECAT_LIFETIME_PACKAGE_ID` | Lifetime package ID | Lifetime package ID | Matching Play package ID |
+| `EXPO_PUBLIC_REVENUECAT_TOP_UP_PACKAGE_ID` | Top-up package ID | Top-up package ID | Matching Play package ID |
 
 Example for a non-secret, client-visible value:
 
@@ -77,17 +80,18 @@ Install the downloaded development or preview APK on a device. A development bui
 Metro with `npm.cmd run dev:mobile:client`; a preview build contains its JavaScript bundle and does
 not require Metro.
 
-Before sharing a preview APK, exercise RevenueCat Test Store purchase success, cancellation,
-failure, restore, application restart, and expiration. Confirm the active entitlement in both the
-app and RevenueCat dashboard.
+Before sharing a preview APK, exercise lifetime and consumable purchase success, cancellation,
+failure, lifetime restore, application restart, quota exhaustion, UTC month rollover, and duplicate
+top-up handling. Confirm lifetime entitlement state and both product transactions in RevenueCat.
 
 ## Google Play internal testing
 
 1. Create the application in Google Play Console with package name `com.teamsaraya.saraya`.
 2. Complete the store listing, app-content declarations, privacy policy, data-safety form, content
    rating, target audience, and country availability.
-3. Create the real subscription products and connect them to the RevenueCat Android app,
-   entitlement, and current offering.
+3. Create the lifetime non-consumable and 10-generation consumable in Google Play, then connect
+   them to the RevenueCat Android app and `default` offering. Only lifetime Premium grants the
+   `saraya_premium` entitlement.
 4. Create a Google service account for Play submissions and upload its JSON key through EAS
    credentials. Never add that file to this repository.
 5. Produce the production AAB and submit it:
@@ -111,5 +115,5 @@ real Google Play purchase path.
 - The package name remains `com.teamsaraya.saraya`; changing it creates a different Play app.
 - EAS owns a recoverable Android keystore and production version codes auto-increment.
 - The AAB is tested on the Google Play internal track before any wider rollout.
-- Purchase, restore, cancellation, expiration, offline recovery, and itinerary continuation pass.
+- Lifetime purchase/restore, consumable top-up, cancellation, quota rollover, offline recovery, and itinerary continuation pass.
 - The Play data-safety answers and privacy policy match the SDKs and data actually shipped.

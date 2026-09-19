@@ -1,8 +1,10 @@
 import {
   tripPreferencesSchema,
   type Budget,
+  type GenerationQuota,
   type GeneratedItinerary,
   type ItineraryStatus,
+  type PremiumAccess,
   type TravelPace,
   type TripPreferences,
 } from '@saraya/contracts';
@@ -23,7 +25,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { destinationGateway } from '@/features/discovery/gateways';
-import { subscriptionGateway } from '@/features/subscriptions';
+import { generationQuotaGateway, premiumGateway } from '@/features/subscriptions';
 import { Button, Chip, LoadingState, Mascot, Screen, StatusPanel } from '@/ui/components';
 import { colors, radius, spacing, type } from '@/ui/theme';
 
@@ -57,6 +59,8 @@ export function ItineraryPlannerScreen() {
   const [accessibilityNeeds, setAccessibilityNeeds] = useState('No special requirements');
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<GeneratedItinerary | null>(null);
+  const [premiumAccess, setPremiumAccess] = useState<PremiumAccess>('free');
+  const [quota, setQuota] = useState<GenerationQuota>();
   const [activeDay, setActiveDay] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -92,16 +96,27 @@ export function ItineraryPlannerScreen() {
     accessibilityNeeds,
   }), [accessibilityNeeds, budget, destinationId, durationDays, pace, selectedInterests, startingPoint]);
 
-  const generate = useCallback(async (nextPreferences: TripPreferences) => {
+  const generate = useCallback(async (nextPreferences: TripPreferences, access: PremiumAccess) => {
     abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setStatus('generating');
-    setFieldError(null);
-    setSaved(false);
     try {
+      const availableQuota = await generationQuotaGateway.getQuota(access);
+      setPremiumAccess(access);
+      setQuota(availableQuota);
+      if (!availableQuota.canGenerate) {
+        setStatus('idle');
+        router.push({ pathname: '/premium/paywall', params: { destinationId } });
+        return;
+      }
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setStatus('generating');
+      setFieldError(null);
+      setSaved(false);
       const result = await itineraryGateway.generate(nextPreferences, controller.signal);
+      const consumption = await generationQuotaGateway.consumeAfterSuccess(access);
       setItinerary(result);
+      setQuota(consumption.quota);
       setActiveDay(1);
       setStatus('ready');
       await pendingItineraryStore.clear();
@@ -112,7 +127,20 @@ export function ItineraryPlannerScreen() {
         setStatus('error');
       }
     }
-  }, []);
+  }, [destinationId, router]);
+
+  const beginGeneration = useCallback(async (nextPreferences: TripPreferences) => {
+    try {
+      setStatus('checking-access');
+      setFieldError(null);
+      await pendingItineraryStore.save(nextPreferences);
+      const access = await premiumGateway.getAccess();
+      await generate(nextPreferences, access);
+    } catch {
+      setStatus('idle');
+      setFieldError('Generation access could not be checked. Check your connection and try again.');
+    }
+  }, [generate]);
 
   useEffect(() => {
     if (resumeAfterPurchase !== 'true' || pendingPreferences === undefined || resumeAttemptedRef.current) return;
@@ -120,19 +148,15 @@ export function ItineraryPlannerScreen() {
     if (!pendingPreferences) return;
 
     let active = true;
-    void subscriptionGateway.getEntitlement()
-      .then((entitlement) => {
+    void premiumGateway.getAccess()
+      .then((access) => {
         if (!active) return;
-        if (entitlement === 'active') void generate(pendingPreferences);
-        else {
-          setStatus('idle');
-          setFieldError('Premium is not active yet. Complete or restore your purchase to continue.');
-        }
+        void generate(pendingPreferences, access);
       })
       .catch(() => {
         if (!active) return;
         setStatus('idle');
-        setFieldError('Premium access could not be checked. Please try again.');
+        setFieldError('Generation access could not be checked. Please try again.');
       });
 
     return () => { active = false; };
@@ -144,21 +168,7 @@ export function ItineraryPlannerScreen() {
       setFieldError(parsed.error.issues[0]?.message ?? 'Review your trip preferences.');
       return;
     }
-    try {
-      setStatus('checking-access');
-      setFieldError(null);
-      await pendingItineraryStore.save(parsed.data);
-      const entitlement = await subscriptionGateway.getEntitlement();
-      if (entitlement === 'active') {
-        await generate(parsed.data);
-      } else {
-        setStatus('idle');
-        router.push({ pathname: '/premium/paywall', params: { destinationId } });
-      }
-    } catch {
-      setStatus('idle');
-      setFieldError('Premium access could not be checked. Check your connection and try again.');
-    }
+    await beginGeneration(parsed.data);
   };
 
   const toggleInterest = (interest: string) => {
@@ -201,7 +211,11 @@ export function ItineraryPlannerScreen() {
           title={status === 'cancelled' ? 'Generation cancelled' : 'We hit a detour'}
           tone={status === 'cancelled' ? 'warning' : 'error'}
         />
-        <Button icon={RefreshCw} label="Try generation again" onPress={() => void generate(preferences)} />
+        <Button
+          icon={RefreshCw}
+          label="Try generation again"
+          onPress={() => void beginGeneration(preferences)}
+        />
         <Button label="Edit preferences" onPress={() => setStatus('idle')} variant="secondary" />
       </Screen>
     );
@@ -241,6 +255,13 @@ export function ItineraryPlannerScreen() {
           );
         })}
         {saved ? <StatusPanel message="The production API will persist this plan when Member 2 connects the itinerary endpoint." title="Itinerary saved locally for this demo" tone="success" /> : null}
+        {quota ? (
+          <StatusPanel
+            message={`${quota.includedRemaining} included · ${quota.topUpRemaining} purchased generations remain.`}
+            title={premiumAccess === 'premium' ? 'Premium generation balance' : 'Free generation balance'}
+            tone={quota.canGenerate ? 'success' : 'warning'}
+          />
+        ) : null}
         <View style={styles.actions}>
           <Button
             icon={Check}
@@ -252,7 +273,14 @@ export function ItineraryPlannerScreen() {
             }}
             style={styles.primaryAction}
           />
-          <Button icon={RefreshCw} label="Regenerate" onPress={() => void generate(preferences)} variant="secondary" />
+          {premiumAccess === 'premium' ? (
+            <Button
+              icon={RefreshCw}
+              label={quota?.canRegenerate ? 'Regenerate' : 'Get more generations'}
+              onPress={() => void beginGeneration(preferences)}
+              variant="secondary"
+            />
+          ) : null}
         </View>
       </Screen>
     );
@@ -300,7 +328,7 @@ export function ItineraryPlannerScreen() {
         />
       </View>
       {fieldError ? <Text accessibilityRole="alert" style={styles.error}>{fieldError}</Text> : null}
-      <StatusPanel message="Free accounts continue to the RevenueCat handoff; active Premium accounts generate directly." title="Premium access is checked next" tone="warning" />
+      <StatusPanel message="Free accounts include 3 lifetime generations. Lifetime Premium includes 10 generations per calendar month." title="Your generation balance is checked next" tone="warning" />
       <Button icon={Sparkles} label="Generate my itinerary" onPress={() => void submit()} />
     </Screen>
   );

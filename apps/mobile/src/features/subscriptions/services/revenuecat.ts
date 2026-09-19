@@ -1,6 +1,6 @@
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
-import { SubscriptionConfigurationError } from '../gateways/subscription.gateway';
+import { PurchaseConfigurationError } from '../gateways/subscription.gateway';
 
 const appEnvironment = process.env.EXPO_PUBLIC_APP_ENV ?? 'development';
 const apiKey =
@@ -40,5 +40,5 @@ export function initializeRevenueCat() {
 
 export async function ensureRevenueCatConfigured() {
   await initializeRevenueCat();
-  if (!(await Purchases.isConfigured())) throw new SubscriptionConfigurationError();
+  if (!(await Purchases.isConfigured())) throw new PurchaseConfigurationError();
 }
