@@ -1,5 +1,5 @@
 {
-  "name": "pantastour",
+  "name": "saraya",
   "version": "0.1.0",
   "private": true,
   "workspaces": [
@@ -11,8 +11,8 @@
   },
   "scripts": {
     "bootstrap": "npm install",
-    "dev:mobile": "npm run start --workspace=@pantastour/mobile",
-    "dev:api": "npm run dev --workspace=@pantastour/api",
+    "dev:mobile": "npm run start --workspace=@saraya/mobile",
+    "dev:api": "npm run dev --workspace=@saraya/api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"

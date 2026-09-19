@@ -1,4 +1,4 @@
-# PantasTour
+# Saraya
 
 ## A Personalized Guide for Planning and Travelling to the Philippines
 
@@ -26,7 +26,7 @@
 
 ## 1. EXECUTIVE SUMMARY
 
-PantasTour is a comprehensive travel companion application designed specifically for exploring the Philippines. The app combines personalized recommendations, gamified discovery, cultural education, real-time safety alerts, and social collaboration features to create an engaging travel planning and tracking experience.
+Saraya is a comprehensive travel companion application designed specifically for exploring the Philippines. The app combines personalized recommendations, gamified discovery, cultural education, real-time safety alerts, and social collaboration features to create an engaging travel planning and tracking experience.
 
 The MVP (Minimum Viable Product) focuses on five core features that address the key pain points of Philippines travel:
 
