@@ -12,6 +12,8 @@
   "scripts": {
     "bootstrap": "npm install",
     "dev:mobile": "npm run start --workspace=@saraya/mobile",
+    "dev:mobile:client": "npm run start:dev-client --workspace=@saraya/mobile",
+    "dev:mobile:go": "npm run start:go --workspace=@saraya/mobile",
     "dev:api": "npm run dev --workspace=@saraya/api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

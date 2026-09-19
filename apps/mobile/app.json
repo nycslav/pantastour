@@ -6,9 +6,20 @@
     "orientation": "portrait",
     "scheme": "saraya",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0bf3f413-d9a9-4f61-962c-b6621a51e5eb"
+      }
+    },
+    "android": {
+      "package": "com.teamsaraya.saraya"
     }
   }
 }

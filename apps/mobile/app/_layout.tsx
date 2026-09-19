@@ -7,9 +7,11 @@ import {
 } from '@expo-google-fonts/nunito';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { initializeRevenueCat } from '@/features/subscriptions';
 import { colors } from '@/ui/theme';
 
 export default function RootLayout() {
@@ -19,6 +21,10 @@ export default function RootLayout() {
     Nunito_700Bold,
     Nunito_900Black,
   });
+
+  useEffect(() => {
+    void initializeRevenueCat();
+  }, []);
 
   if (!fontsLoaded) {
     return <View style={styles.loading}><ActivityIndicator color={colors.blue} size="large" /></View>;
