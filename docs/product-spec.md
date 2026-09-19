@@ -376,7 +376,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 - Google/Facebook OAuth (authentication)
 - RevenueCat SDK (In-App Purchases & Subscription Management via Google Play Billing and Apple App Store)
 - Firebase Cloud Messaging (push notifications)
-- OpenAI API (AI itinerary generation - premium)
+- Google Gemini API behind a backend adapter (AI itinerary generation - premium)
 
 ### Performance & Security:
 
@@ -511,7 +511,8 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 
 ### AI Itinerary Generation
 
-- OpenAI GPT API for natural language generation
+- Google Gemini API for natural language generation, isolated behind a backend provider adapter
+- Deterministic backend generation when credentials are absent or the provider is unavailable
 - Input: duration, budget, style, accessibility needs
 - Output: structured day-by-day itinerary JSON
 

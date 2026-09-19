@@ -1,5 +1,6 @@
 import type { DestinationDetail, TripPreferences } from '@saraya/contracts';
 
+import { GeminiItineraryGenerator } from '../../integrations/gemini/gemini-itinerary.generator';
 import { OpenAiItineraryGenerator } from '../../integrations/openai/openai-itinerary.generator';
 import { itineraryPlanSchema, type ItineraryPlan } from './itinerary.plan';
 
@@ -59,14 +60,47 @@ export class DeterministicItineraryGenerator implements ItineraryGenerator {
   }
 }
 
+class ResilientItineraryGenerator implements ItineraryGenerator {
+  constructor(
+    private readonly primary: ItineraryGenerator,
+    private readonly fallback: ItineraryGenerator,
+  ) {}
+
+  async generate(
+    preferences: TripPreferences,
+    destination: DestinationDetail,
+  ): Promise<ItineraryPlan> {
+    try {
+      return await this.primary.generate(preferences, destination);
+    } catch (error) {
+      console.warn('AI itinerary generation failed; using the deterministic fallback.', error);
+      return this.fallback.generate(preferences, destination);
+    }
+  }
+}
+
 export function createItineraryGenerator(): ItineraryGenerator {
-  if (
-    process.env.NODE_ENV !== 'test' &&
-    process.env.OPENAI_API_KEY &&
-    process.env.ITINERARY_GENERATOR !== 'deterministic'
-  ) {
-    return new OpenAiItineraryGenerator();
+  const fallback = new DeterministicItineraryGenerator();
+
+  if (process.env.NODE_ENV === 'test' || process.env.ITINERARY_GENERATOR === 'deterministic') {
+    return fallback;
   }
 
-  return new DeterministicItineraryGenerator();
+  const provider = process.env.AI_PROVIDER?.toLowerCase();
+
+  if (
+    (provider === 'gemini' || (!provider && process.env.GEMINI_API_KEY)) &&
+    process.env.GEMINI_API_KEY
+  ) {
+    return new ResilientItineraryGenerator(new GeminiItineraryGenerator(), fallback);
+  }
+
+  if (
+    (provider === 'openai' || (!provider && process.env.OPENAI_API_KEY)) &&
+    process.env.OPENAI_API_KEY
+  ) {
+    return new ResilientItineraryGenerator(new OpenAiItineraryGenerator(), fallback);
+  }
+
+  return fallback;
 }

@@ -156,6 +156,7 @@ saraya/
 │       │   │   ├── notifications/
 │       │   │   ├── photo-storage/
 │       │   │   ├── revenuecat/
+│       │   │   ├── gemini/
 │       │   │   └── openai/
 │       │   ├── jobs/
 │       │   │   ├── poll-weather.job.ts
@@ -224,7 +225,7 @@ The following roles define the team's current Shipathon responsibilities. They f
 | Member | Current role | Main responsibilities |
 | --- | --- | --- |
 | **Member 1** | Mobile Experience | Navigation, visual design, destination discovery, destination details, the trip-preference form, and the itinerary-results screen |
-| **Member 2** | Backend and AI | API foundation, destination data, OpenAI itinerary generation, itinerary storage, and backend tests |
+| **Member 2** | Backend and AI | API foundation, destination data, Gemini itinerary generation, itinerary storage, and backend tests |
 | **Member 3** | RevenueCat and Delivery | Paywall, purchases, premium access, Android builds, GitHub setup, documentation, testing, and demo preparation |
 
 All three members share responsibility for testing the complete Shipathon demonstration flow:
@@ -239,7 +240,7 @@ The original balanced feature assignment below remains the ownership plan for co
 
 | Member | Primary feature area | Main responsibilities |
 | --- | --- | --- |
-| **Member 1** | Accounts, Discovery, and AI Itineraries | Authentication, onboarding, user profile, destinations, recommendations, search, nearby locations, maps, cultural guides, AI itinerary API, and OpenAI integration |
+| **Member 1** | Accounts, Discovery, and AI Itineraries | Authentication, onboarding, user profile, destinations, recommendations, search, nearby locations, maps, cultural guides, AI itinerary API, and Gemini integration |
 | **Member 2** | Journey, Gamification, and Group Trips | Bucket list, GPS check-ins, photo journal, journey timeline, achievements, statistics, collaborative trips, voting, expenses, and trip/itinerary persistence |
 | **Member 3** | Events, Safety, and Platform Services | Festivals, calendar reminders, weather, safety alerts, push notifications, subscriptions, background jobs, CI, and deployment |
 
@@ -397,10 +398,10 @@ Each backend module should contain `*.route.ts`, `*.controller.ts`, `*.service.t
 | `apps/api/src/modules/cultural-guides/` | Member 1 | Historical and cultural content retrieval |
 | `apps/api/src/modules/itineraries/` | Member 1 | Validate trip constraints, request AI generation, validate structured output, and expose itinerary endpoints |
 | `apps/api/src/integrations/maps/` | Member 1 | Maps, directions, place information, and geocoding adapter |
-| `apps/api/src/integrations/openai/` | Member 1 | OpenAI client, prompt construction, structured-output schema, timeouts, retries, and safe error mapping |
+| `apps/api/src/integrations/gemini/` | Member 1 | Gemini client, prompt construction, structured-output schema, timeouts, fallback, and safe error mapping |
 | `apps/api/tests/auth/` | Member 1 | Authentication integration tests |
 | `apps/api/tests/discovery/` | Member 1 | Destination, hidden-gem authorization, and cultural-guide integration tests |
-| `apps/api/tests/itineraries/` | Member 1 | Itinerary endpoints and mocked OpenAI-response tests |
+| `apps/api/tests/itineraries/` | Member 1 | Itinerary endpoints and mocked AI-provider-response tests |
 
 ### 6.3 Member 2 backend modules: Journey, Gamification, and Group Trips
 
@@ -448,10 +449,10 @@ The `destinations` module must depend on a narrow entitlement interface rather t
 
 | Part | Primary owner | Required coordination |
 | --- | --- | --- |
-| `POST /group-trips/:id/generate-itinerary` route and AI orchestration | Member 1 | Confirms that the requester is a premium group member, calls the OpenAI adapter, and validates the returned JSON |
+| `POST /group-trips/:id/generate-itinerary` route and AI orchestration | Member 1 | Confirms that the requester is a premium group member, calls the Gemini adapter, and validates the returned JSON |
 | `itineraries` repository and persistence contract | Member 2 | Provides transactional replacement or versioning of day-by-day itinerary rows |
 | Group-trip membership and authorization | Member 2 | Exposes a reusable membership check consumed by Member 1's itinerary route |
-| OpenAI credentials and requests | Member 1 | Runs only on the backend; the API key must never be bundled into the mobile application |
+| Gemini credentials and requests | Member 1 | Runs only on the backend; the API key must never be bundled into the mobile application |
 
 Member 1 owns itinerary generation behavior, while Member 2 owns collaboration and persistence. Their runtime schema and inferred TypeScript contract must be defined in `packages/contracts/` before implementation.
 
@@ -537,7 +538,7 @@ Define each runtime schema once in `packages/contracts/` and infer its TypeScrip
 | `docs/api.md` | Member 1 | Members 2 and 3 | API conventions and endpoint reference; each member documents their endpoints |
 | `docs/database.md` | Member 2 | Members 1 and 3 | Tables, relationships, constraints, indexes, and PostGIS usage |
 | `docs/testing.md` | Member 2 | Member 3 | Test strategy, test accounts, cases, and results |
-| `docs/integrations.md` | Member 3 | Member 1 | Maps, PAGASA, Firebase, storage, RevenueCat, and OpenAI configuration; Member 1 authors the OpenAI subsection |
+| `docs/integrations.md` | Member 3 | Member 1 | Maps, PAGASA, Firebase, storage, RevenueCat, and Gemini configuration; Member 1 authors the AI subsection |
 | `docs/security-and-privacy.md` | Member 3 | Member 1 | Authentication, secrets, permissions, privacy, rate limits, and secure storage |
 | `docs/demo-script.md` | Member 1 | Members 2 and 3 | Ordered demo flow with speaking parts for all members |
 
@@ -653,8 +654,8 @@ Stretch features must not delay the required MVP.
 
 | Member | Mobile scope | Backend scope | Database scope | Additional ownership |
 | --- | --- | --- | --- | --- |
-| Member 1 | Accounts, discovery, and AI-itinerary screens | 5 feature modules plus maps and OpenAI | 4 core tables plus destination geospatial work | Navigation, design system, shared types, API documentation, demo flow |
+| Member 1 | Accounts, discovery, and AI-itinerary screens | 5 feature modules plus maps and Gemini | 4 core tables plus destination geospatial work | Navigation, design system, shared types, API documentation, demo flow |
 | Member 2 | Journey, gamification, and group-trip screens | 5 feature modules and photo storage | 9 core/supporting tables plus check-in, trip, and itinerary persistence | Validation, database documentation, testing plan, test evidence |
 | Member 3 | 5 major screens and events/safety modules | 4 feature modules, 3 integrations, and 2 jobs | 5 core tables plus alert geospatial work | Deployment, CI, environment configuration, README, security documentation |
 
-The counts are not identical because task difficulty differs. Member 3 has fewer ordinary content screens but owns more external integrations, premium entitlement infrastructure, and deployment work. Member 2 owns the most stateful workflows and their normalized persistence. Member 1 owns authentication, the broadest browsing workflow, and the OpenAI integration. This keeps the expected development effort approximately balanced.
+The counts are not identical because task difficulty differs. Member 3 has fewer ordinary content screens but owns more external integrations, premium entitlement infrastructure, and deployment work. Member 2 owns the most stateful workflows and their normalized persistence. Member 1 owns authentication, the broadest browsing workflow, and the Gemini integration. This keeps the expected development effort approximately balanced.

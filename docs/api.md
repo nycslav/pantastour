@@ -53,8 +53,9 @@ return `404` with `ROUTE_NOT_FOUND`.
 
 Accepts the shared trip-preference contract: destination, starting point, 1-30 day duration,
 budget, interests, pace, and accessibility needs. It returns a validated day-by-day itinerary.
-When `OPENAI_API_KEY` is configured, the API uses OpenAI structured output; otherwise it uses the
-deterministic generator for local development and reliable demonstrations.
+When `AI_PROVIDER=gemini` and `GEMINI_API_KEY` are configured, the API uses Gemini structured
+output. Missing credentials or provider failures use the deterministic generator for local
+development and reliable demonstrations. The provider runs only on the backend.
 
 The mobile client calls this endpoint only after the RevenueCat premium handoff. Server-side
 RevenueCat entitlement verification remains Member 3's integration boundary.

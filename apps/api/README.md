@@ -29,7 +29,9 @@ records in `database/seeds/destinations.json` so API development can continue in
 Initialize a configured database with `npm run db:migrate`, then load the catalog with
 `npm run db:seed`.
 
-The itinerary module uses the official OpenAI SDK when `OPENAI_API_KEY` is present. Set
-`OPENAI_MODEL` to override the default `gpt-5-mini`, or set `ITINERARY_GENERATOR=deterministic` to
-force the zero-network fallback. Both implementations return the same shared validated contract.
+The itinerary module uses the official Google Gen AI SDK when `AI_PROVIDER=gemini` and
+`GEMINI_API_KEY` is present. Set `GEMINI_MODEL` to override the default `gemini-3.6-flash`.
+The OpenAI adapter remains available with `AI_PROVIDER=openai`. Missing credentials, provider
+errors, or `ITINERARY_GENERATOR=deterministic` use the zero-network fallback. Every implementation
+returns the same shared validated contract.
 
