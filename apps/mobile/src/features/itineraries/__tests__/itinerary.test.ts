@@ -1,6 +1,6 @@
 import { tripPreferencesSchema } from '@saraya/contracts';
 
-import { createMockItinerary, MockPremiumAccessGateway } from '../services/mockAdapters';
+import { createMockItinerary } from '../services/mockAdapters';
 
 const preferences = tripPreferencesSchema.parse({
   destinationId: 'siargao',
@@ -23,12 +23,5 @@ describe('itinerary adapters', () => {
 
   it('rejects missing interests before generation', () => {
     expect(() => tripPreferencesSchema.parse({ ...preferences, interests: [] })).toThrow();
-  });
-
-  it('models the free-to-premium handoff deterministically', async () => {
-    const gateway = new MockPremiumAccessGateway();
-    expect(await gateway.getEntitlement()).toBe('inactive');
-    expect(await gateway.requestPurchase()).toBe('active');
-    expect(await gateway.getEntitlement()).toBe('active');
   });
 });

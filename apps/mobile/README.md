@@ -26,6 +26,18 @@ EXPO_PUBLIC_API_BASE_URL=http://<reachable-host>:3000
 Use `EXPO_PUBLIC_MOCK_PREMIUM=true` to exercise the existing-premium path. When false or omitted, the
 mock adapter demonstrates the free-user handoff that Member 3's RevenueCat adapter will replace.
 
+## RevenueCat and Android delivery
+
+RevenueCat is initialized once by the root layout and accessed through the subscriptions gateway.
+For local and EAS builds, configure `EXPO_PUBLIC_REVENUECAT_API_KEY` and
+`EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`. The legacy
+`EXPO_PUBLIC_REVENUECAT_TEST_API_KEY` remains accepted for existing local environments, but new
+configuration should use the environment-neutral name. Production requires the RevenueCat Android
+public SDK key and rejects a Test Store key.
+
+Android delivery profiles, EAS environment setup, APK/AAB commands, signing, and the Google Play
+internal-testing checklist are documented in [`docs/android-delivery.md`](../../docs/android-delivery.md).
+
 Commands:
 
 ```text
@@ -33,5 +45,7 @@ npm run start --workspace=@saraya/mobile
 npm run lint --workspace=@saraya/mobile
 npm run typecheck --workspace=@saraya/mobile
 npm run test --workspace=@saraya/mobile
+npm run android:check
+npm run android:build:preview
 ```
 

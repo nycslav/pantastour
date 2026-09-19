@@ -19,10 +19,11 @@ import {
   Waves,
   X,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { destinationGateway } from '@/features/discovery/gateways';
+import { subscriptionGateway } from '@/features/subscriptions';
 import { Button, Chip, LoadingState, Mascot, Screen, StatusPanel } from '@/ui/components';
 import { colors, radius, spacing, type } from '@/ui/theme';
 
@@ -30,7 +31,6 @@ import { PreferenceGroup } from '../components/PreferenceGroup';
 import {
   itineraryGateway,
   pendingItineraryStore,
-  premiumAccessGateway,
 } from '../services/mockAdapters';
 
 const durations = [3, 5, 7] as const;
@@ -39,10 +39,15 @@ const paces: readonly TravelPace[] = ['Relaxed', 'Balanced', 'Full days'];
 const interests = ['Nature', 'Local food', 'Heritage', 'Beaches', 'Adventure', 'Culture'] as const;
 
 export function ItineraryPlannerScreen() {
-  const { destinationId = 'south-cebu' } = useLocalSearchParams<{ destinationId?: string }>();
+  const {
+    destinationId = 'south-cebu',
+    resumeAfterPurchase,
+  } = useLocalSearchParams<{ destinationId?: string; resumeAfterPurchase?: string }>();
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
+  const resumeAttemptedRef = useRef(false);
   const [destinationName, setDestinationName] = useState<string>();
+  const [pendingPreferences, setPendingPreferences] = useState<TripPreferences | null>();
   const [status, setStatus] = useState<ItineraryStatus>('idle');
   const [durationDays, setDurationDays] = useState<3 | 5 | 7>(3);
   const [budget, setBudget] = useState<Budget>('Comfort');
@@ -59,16 +64,23 @@ export function ItineraryPlannerScreen() {
   useEffect(() => {
     void destinationGateway.getById(destinationId).then((destination) => setDestinationName(destination?.name));
     void pendingItineraryStore.load().then((pending) => {
-      if (!pending || pending.destinationId !== destinationId) return;
+      if (!pending || pending.destinationId !== destinationId) {
+        setPendingPreferences(null);
+        if (resumeAfterPurchase === 'true') {
+          setFieldError('Your saved trip choices could not be found. Please review them and try again.');
+        }
+        return;
+      }
       setStartingPoint(pending.startingPoint);
       setDurationDays(pending.durationDays === 5 ? 5 : pending.durationDays === 7 ? 7 : 3);
       setBudget(pending.budget);
       setPace(pending.pace);
       setSelectedInterests(pending.interests);
       setAccessibilityNeeds(pending.accessibilityNeeds);
+      setPendingPreferences(pending);
     });
     return () => abortRef.current?.abort();
-  }, [destinationId]);
+  }, [destinationId, resumeAfterPurchase]);
 
   const preferences = useMemo<TripPreferences>(() => ({
     destinationId,
@@ -80,7 +92,7 @@ export function ItineraryPlannerScreen() {
     accessibilityNeeds,
   }), [accessibilityNeeds, budget, destinationId, durationDays, pace, selectedInterests, startingPoint]);
 
-  const generate = async (nextPreferences = preferences) => {
+  const generate = useCallback(async (nextPreferences: TripPreferences) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -100,7 +112,31 @@ export function ItineraryPlannerScreen() {
         setStatus('error');
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (resumeAfterPurchase !== 'true' || pendingPreferences === undefined || resumeAttemptedRef.current) return;
+    resumeAttemptedRef.current = true;
+    if (!pendingPreferences) return;
+
+    let active = true;
+    void subscriptionGateway.getEntitlement()
+      .then((entitlement) => {
+        if (!active) return;
+        if (entitlement === 'active') void generate(pendingPreferences);
+        else {
+          setStatus('idle');
+          setFieldError('Premium is not active yet. Complete or restore your purchase to continue.');
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setStatus('idle');
+        setFieldError('Premium access could not be checked. Please try again.');
+      });
+
+    return () => { active = false; };
+  }, [generate, pendingPreferences, resumeAfterPurchase]);
 
   const submit = async () => {
     const parsed = tripPreferencesSchema.safeParse(preferences);
@@ -108,19 +144,21 @@ export function ItineraryPlannerScreen() {
       setFieldError(parsed.error.issues[0]?.message ?? 'Review your trip preferences.');
       return;
     }
-    setStatus('checking-access');
-    setFieldError(null);
-    await pendingItineraryStore.save(parsed.data);
-    const entitlement = await premiumAccessGateway.getEntitlement();
-    if (entitlement === 'active') await generate(parsed.data);
-    else setStatus('awaiting-premium');
-  };
-
-  const continueFromPaywall = async () => {
-    setStatus('checking-access');
-    const entitlement = await premiumAccessGateway.requestPurchase();
-    if (entitlement === 'active') await generate(preferences);
-    else setStatus('awaiting-premium');
+    try {
+      setStatus('checking-access');
+      setFieldError(null);
+      await pendingItineraryStore.save(parsed.data);
+      const entitlement = await subscriptionGateway.getEntitlement();
+      if (entitlement === 'active') {
+        await generate(parsed.data);
+      } else {
+        setStatus('idle');
+        router.push({ pathname: '/premium/paywall', params: { destinationId } });
+      }
+    } catch {
+      setStatus('idle');
+      setFieldError('Premium access could not be checked. Check your connection and try again.');
+    }
   };
 
   const toggleInterest = (interest: string) => {
@@ -133,23 +171,6 @@ export function ItineraryPlannerScreen() {
 
   if (status === 'checking-access') {
     return <Screen><LoadingState label="Checking premium access and preserving your choices…" /></Screen>;
-  }
-
-  if (status === 'awaiting-premium') {
-    return (
-      <Screen contentContainerStyle={styles.centeredScreen}>
-        <Mascot mood="star" size={150} />
-        <Text accessibilityRole="header" style={styles.centerTitle}>Unlock your {destinationName} itinerary</Text>
-        <Text style={styles.centerBody}>Your preferences are saved. RevenueCat will replace this mock handoff without changing the planning screen.</Text>
-        <StatusPanel
-          message={`${durationDays} days · ${budget} · ${pace}\n${selectedInterests.join(' · ')}`}
-          title="Pending itinerary"
-          tone="warning"
-        />
-        <Button icon={Sparkles} label="Continue mock premium handoff" onPress={() => void continueFromPaywall()} />
-        <Button label="Back to preferences" onPress={() => setStatus('idle')} variant="secondary" />
-      </Screen>
-    );
   }
 
   if (status === 'generating') {
@@ -180,7 +201,7 @@ export function ItineraryPlannerScreen() {
           title={status === 'cancelled' ? 'Generation cancelled' : 'We hit a detour'}
           tone={status === 'cancelled' ? 'warning' : 'error'}
         />
-        <Button icon={RefreshCw} label="Try generation again" onPress={() => void generate()} />
+        <Button icon={RefreshCw} label="Try generation again" onPress={() => void generate(preferences)} />
         <Button label="Edit preferences" onPress={() => setStatus('idle')} variant="secondary" />
       </Screen>
     );
@@ -231,7 +252,7 @@ export function ItineraryPlannerScreen() {
             }}
             style={styles.primaryAction}
           />
-          <Button icon={RefreshCw} label="Regenerate" onPress={() => void generate()} variant="secondary" />
+          <Button icon={RefreshCw} label="Regenerate" onPress={() => void generate(preferences)} variant="secondary" />
         </View>
       </Screen>
     );

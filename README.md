@@ -33,5 +33,6 @@ Node.js is not installed in the environment that created this initial scaffold. 
 - [Product specification](docs/product-spec.md)
 - [Team ownership](docs/ownership.md)
 - [Architecture](docs/architecture.md)
+- [Android delivery](docs/android-delivery.md)
 - [Contributing](CONTRIBUTING.md)
 

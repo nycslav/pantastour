@@ -10,7 +10,7 @@ import {
 
 import { mockDestinations } from '@/features/discovery/data/mockDestinations';
 
-import type { ItineraryGateway, PendingItineraryStore, PremiumAccessGateway, PremiumEntitlement } from '../gateways';
+import type { ItineraryGateway, PendingItineraryStore } from '../gateways';
 
 const PENDING_KEY = '@saraya/pending-itinerary';
 const wait = (milliseconds: number, signal?: AbortSignal) =>
@@ -66,21 +66,6 @@ export class MockItineraryGateway implements ItineraryGateway {
   }
 }
 
-export class MockPremiumAccessGateway implements PremiumAccessGateway {
-  private entitlement: PremiumEntitlement = process.env.EXPO_PUBLIC_MOCK_PREMIUM === 'true' ? 'active' : 'inactive';
-
-  async getEntitlement() {
-    await wait(180);
-    return this.entitlement;
-  }
-
-  async requestPurchase() {
-    await wait(450);
-    this.entitlement = 'active';
-    return this.entitlement;
-  }
-}
-
 export class AsyncPendingItineraryStore implements PendingItineraryStore {
   async load() {
     const raw = await AsyncStorage.getItem(PENDING_KEY);
@@ -114,5 +99,4 @@ export const itineraryGateway: ItineraryGateway =
   process.env.EXPO_PUBLIC_DATA_MODE === 'api'
     ? new ApiItineraryGateway()
     : new MockItineraryGateway();
-export const premiumAccessGateway: PremiumAccessGateway = new MockPremiumAccessGateway();
 export const pendingItineraryStore: PendingItineraryStore = new AsyncPendingItineraryStore();

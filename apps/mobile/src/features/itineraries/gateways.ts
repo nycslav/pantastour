@@ -5,13 +5,6 @@ export interface ItineraryGateway {
   save(itinerary: GeneratedItinerary): Promise<void>;
 }
 
-export type PremiumEntitlement = 'inactive' | 'active' | 'expired';
-
-export interface PremiumAccessGateway {
-  getEntitlement(): Promise<PremiumEntitlement>;
-  requestPurchase(): Promise<PremiumEntitlement>;
-}
-
 export interface PendingItineraryStore {
   load(): Promise<TripPreferences | null>;
   save(preferences: TripPreferences): Promise<void>;
