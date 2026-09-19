@@ -10,6 +10,7 @@ export const itineraryPlanSchema = z.object({
       stops: z.array(
         z.object({
           time: z.string().min(1),
+          candidateId: z.string().min(1).nullable(),
           title: z.string().min(1),
           detail: z.string().min(1),
           kind: z.enum(['transport', 'activity', 'meal', 'stay']),

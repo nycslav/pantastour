@@ -21,6 +21,7 @@ describe('itinerary API', () => {
       expect.objectContaining({
         id: expect.any(String),
         destinationId: 'siargao',
+        generationSource: 'deterministic',
         generatedAt: expect.any(String),
       }),
     );

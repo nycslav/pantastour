@@ -17,3 +17,8 @@ metadata and validated preferences live on the parent record, while ordered days
 are relational rows with cascading deletion. A future authentication migration can populate the
 nullable `user_id` without changing the current Shipathon API contract.
 
+The fourth migration records whether Gemini, OpenAI, or the deterministic fallback generated an
+itinerary. The fifth migration adds an optional normalized Geoapify place reference to each stop,
+including the provider ID, verified display data, and coordinates. A database constraint requires
+all place fields to be present together, while generic transport or rest stops keep them null.
+

@@ -47,6 +47,7 @@ export const createMockItinerary = (preferences: TripPreferences): GeneratedItin
   return generatedItinerarySchema.parse({
     id: `mock-${preferences.destinationId}-${preferences.durationDays}`,
     destinationId: preferences.destinationId,
+    generationSource: 'deterministic',
     title: `${destination.name}: ${destination.tags.slice(0, 3).join(', ')}`,
     subtitle: `${preferences.durationDays} days · ${preferences.budget} · ${preferences.pace}`,
     preferences,

@@ -13,6 +13,7 @@ jest.mock('../src/platform/database/pool', () => ({
 const itinerary = generatedItinerarySchema.parse({
   id: 'itinerary-1',
   destinationId: 'siargao',
+  generationSource: 'gemini',
   title: 'Siargao sample',
   subtitle: 'One day sample',
   preferences: {
@@ -56,7 +57,7 @@ describe('PostgresItineraryRepository', () => {
     expect(mockQuery.mock.calls[0]?.[0]).toBe('BEGIN');
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO itineraries'),
-      expect.arrayContaining(['itinerary-1', 'siargao']),
+      expect.arrayContaining(['itinerary-1', 'siargao', 'gemini']),
     );
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO itinerary_days'),
@@ -72,6 +73,13 @@ describe('PostgresItineraryRepository', () => {
         'Airport transfer',
         'Travel to the accommodation.',
         'transport',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
       ],
     );
     expect(mockQuery.mock.calls.at(-1)?.[0]).toBe('COMMIT');

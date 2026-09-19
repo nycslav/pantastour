@@ -1,25 +1,50 @@
 import type { DestinationDetail } from '@saraya/contracts';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Sparkles, Star } from 'lucide-react-native';
+import { ArrowLeft, Heart, MapPin, Sparkles, Star } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, DestinationArtwork, LoadingState, Screen, SectionTitle, StatusPanel } from '@/ui/components';
 import { colors, radius, spacing, type } from '@/ui/theme';
 import { destinationGateway } from '@/features/discovery/gateways';
+import { bucketListGateway } from '@/features/bucket-list/gateways';
 
 export function DestinationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [destination, setDestination] = useState<DestinationDetail | null>();
+  const [bucketSaved, setBucketSaved] = useState(false);
+  const [bucketSaving, setBucketSaving] = useState(false);
+  const [bucketError, setBucketError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     void destinationGateway.getById(id).then((result) => {
       if (active) setDestination(result);
+    }).catch(() => {
+      if (active) setDestination(null);
+    });
+    void bucketListGateway.list().then((bucketItems) => {
+      if (active) setBucketSaved(bucketItems.some((item) => item.destinationId === id));
+    }).catch(() => {
+      if (active) setBucketError('Your bucket-list status could not be loaded.');
     });
     return () => { active = false; };
   }, [id]);
+
+  const saveToBucket = async () => {
+    if (!destination || bucketSaved) return;
+    setBucketSaving(true);
+    setBucketError(null);
+    try {
+      await bucketListGateway.create({ destinationId: destination.id });
+      setBucketSaved(true);
+    } catch {
+      setBucketError('This destination could not be saved. It may already be in your list.');
+    } finally {
+      setBucketSaving(false);
+    }
+  };
 
   if (destination === undefined) return <Screen><LoadingState label="Opening destination…" /></Screen>;
   if (destination === null) {
@@ -65,11 +90,24 @@ export function DestinationDetailScreen() {
         <View style={styles.phrase}><Text style={styles.phraseLabel}>LOCAL PHRASE</Text><Text style={styles.phraseText}>{destination.culturalGuide.localPhrase}</Text></View>
       </View>
 
-      <Button
-        icon={Sparkles}
-        label={`Plan a ${destination.name} trip`}
-        onPress={() => router.push({ pathname: '/premium/itinerary', params: { destinationId: destination.id } })}
-      />
+      {bucketError ? <StatusPanel message={bucketError} title="Bucket list unavailable" tone="error" /> : null}
+      <View style={styles.actions}>
+        <Button
+          disabled={bucketSaved}
+          icon={Heart}
+          label={bucketSaved ? 'Saved to Bucket' : 'Save to Bucket'}
+          loading={bucketSaving}
+          onPress={() => void saveToBucket()}
+          style={styles.action}
+        />
+        <Button
+          icon={Sparkles}
+          label={`Plan a ${destination.name} trip`}
+          onPress={() => router.push({ pathname: '/premium/itinerary', params: { destinationId: destination.id } })}
+          style={styles.action}
+          variant="quiet"
+        />
+      </View>
     </Screen>
   );
 }
@@ -95,4 +133,6 @@ const styles = StyleSheet.create({
   phrase: { backgroundColor: colors.surface, padding: spacing.lg, borderRadius: radius.md, gap: 3 },
   phraseLabel: { color: colors.blue, fontFamily: type.black, fontSize: 10, letterSpacing: 0.8 },
   phraseText: { color: colors.navy, fontFamily: type.bold, fontSize: 15 },
+  actions: { gap: spacing.sm },
+  action: { width: '100%' },
 });

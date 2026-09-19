@@ -182,6 +182,8 @@ Generates optimized multi-destination itineraries based on:
 - Ferry/flight schedules and travel times
 
 Output includes daily breakdown with recommended accommodations, dining, and activities.
+Generated results identify whether the configured AI provider or the deterministic fallback
+produced the itinerary so users and demo operators can verify provider availability.
 
 ### 5.3 Hidden Gem Database
 
@@ -373,6 +375,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 
 - PAGASA API (weather and safety alerts)
 - Google Maps API (mapping and directions)
+- Geoapify Places API behind a backend adapter for nearby itinerary establishments
 - Google/Facebook OAuth (authentication)
 - RevenueCat SDK (In-App Purchases & Subscription Management via Google Play Billing and Apple App Store)
 - Firebase Cloud Messaging (push notifications)
@@ -512,6 +515,7 @@ User profile information and photo. Achievement badges and statistics. Trip hist
 ### AI Itinerary Generation
 
 - Google Gemini API for natural language generation, isolated behind a backend provider adapter
+- Geoapify Places API supplies nearby establishment candidates; the AI may select only candidate IDs, and the backend validates and resolves those IDs before returning or storing an itinerary
 - Deterministic backend generation when credentials are absent or the provider is unavailable
 - Input: duration, budget, style, accessibility needs
 - Output: structured day-by-day itinerary JSON

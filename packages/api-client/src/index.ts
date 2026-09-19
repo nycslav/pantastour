@@ -1,12 +1,17 @@
 import {
+  bucketListItemSchema,
+  createBucketListItemSchema,
   destinationDetailSchema,
   destinationSummarySchema,
   generatedItinerarySchema,
   nearbyDestinationSummarySchema,
+  updateBucketListItemSchema,
+  type CreateBucketListItemInput,
   type DiscoveryQuery,
   type GeneratedItinerary,
   type NearbyDestinationQueryInput,
   type TripPreferences,
+  type UpdateBucketListItemInput,
 } from '@saraya/contracts';
 import { z } from 'zod';
 
@@ -33,7 +38,7 @@ export function createApiClient(baseUrl: string, getAccessToken?: () => Promise<
       },
     });
     if (!response.ok) throw new ApiClientError('Saraya API request failed.', response.status);
-    return response.json() as Promise<unknown>;
+    return response.status === 204 ? null : response.json() as Promise<unknown>;
   };
 
   return {
@@ -58,6 +63,28 @@ export function createApiClient(baseUrl: string, getAccessToken?: () => Promise<
         if (query.limit !== undefined) params.set('limit', String(query.limit));
         const data = await request(`/destinations/nearby?${params.toString()}`);
         return z.array(nearbyDestinationSummarySchema).parse(data);
+      },
+    },
+    bucketList: {
+      async list() {
+        return z.array(bucketListItemSchema).parse(await request('/bucket-list'));
+      },
+      async create(input: CreateBucketListItemInput) {
+        const item = createBucketListItemSchema.parse(input);
+        return bucketListItemSchema.parse(await request('/bucket-list', {
+          method: 'POST',
+          body: JSON.stringify(item),
+        }));
+      },
+      async update(id: string, input: UpdateBucketListItemInput) {
+        const changes = updateBucketListItemSchema.parse(input);
+        return bucketListItemSchema.parse(await request(
+          `/bucket-list/${encodeURIComponent(id)}`,
+          { method: 'PATCH', body: JSON.stringify(changes) },
+        ));
+      },
+      async delete(id: string) {
+        await request(`/bucket-list/${encodeURIComponent(id)}`, { method: 'DELETE' });
       },
     },
     itineraries: {

@@ -11,6 +11,11 @@ import {
   type DestinationRepository,
 } from '../destinations/destination.repository';
 import {
+  createPlacesProvider,
+  type PlaceCandidate,
+  type PlacesProvider,
+} from '../../integrations/places/places.provider';
+import {
   createItineraryGenerator,
   type ItineraryGenerator,
 } from './itinerary.generator';
@@ -27,6 +32,7 @@ export class ItineraryService {
     private readonly destinations: DestinationRepository = createDestinationRepository(),
     private readonly generator: ItineraryGenerator = createItineraryGenerator(),
     private readonly itineraries: ItineraryRepository = createItineraryRepository(),
+    private readonly places: PlacesProvider = createPlacesProvider(),
   ) {}
 
   async generate(rawPreferences: unknown): Promise<GeneratedItinerary> {
@@ -36,7 +42,8 @@ export class ItineraryService {
       throw new ItineraryDestinationNotFoundError('Destination not found.');
     }
 
-    const plan = await this.generator.generate(preferences, destination);
+    const candidates = await this.places.findNearby(destination);
+    const { plan, source } = await this.generator.generate(preferences, destination, candidates);
     if (!hasExpectedDays(plan.days, preferences.durationDays)) {
       throw new InvalidGeneratedItineraryError(
         'The generated itinerary did not contain the requested sequential days.',
@@ -46,15 +53,23 @@ export class ItineraryService {
     return generatedItinerarySchema.parse({
       id: randomUUID(),
       destinationId: destination.id,
+      generationSource: source,
       title: plan.title,
       subtitle: plan.subtitle,
       preferences,
       days: plan.days.map((day) => ({
         ...day,
-        stops: day.stops.map((stop, index) => ({
-          ...stop,
-          id: `day-${day.dayNumber}-stop-${index + 1}`,
-        })),
+        stops: day.stops.map((stop, index) => {
+          const place = resolvePlace(stop.candidateId, candidates);
+          return {
+            id: `day-${day.dayNumber}-stop-${index + 1}`,
+            time: stop.time,
+            title: place?.name ?? stop.title,
+            detail: place ? `${stop.detail} Address: ${place.address}` : stop.detail,
+            kind: stop.kind,
+            ...(place ? { place } : {}),
+          };
+        }),
       })),
       generatedAt: new Date().toISOString(),
     });
@@ -85,6 +100,21 @@ export class ItineraryService {
   getById(id: string) {
     return this.itineraries.findById(id);
   }
+}
+
+function resolvePlace(candidateId: string | null, candidates: PlaceCandidate[]) {
+  if (!candidateId) {
+    return undefined;
+  }
+
+  const candidate = candidates.find(({ id }) => id === candidateId);
+  if (!candidate) {
+    throw new InvalidGeneratedItineraryError(
+      `The generated itinerary referenced an unknown place candidate: ${candidateId}`,
+    );
+  }
+
+  return candidate;
 }
 
 function hasExpectedDays(days: Array<{ dayNumber: number }>, durationDays: number) {

@@ -42,6 +42,8 @@ CREATE TABLE itineraries (
   id text PRIMARY KEY,
   destination_id text NOT NULL REFERENCES destinations(id),
   user_id text,
+  generation_source text NOT NULL DEFAULT 'deterministic'
+    CHECK (generation_source IN ('gemini', 'openai', 'deterministic')),
   title text NOT NULL,
   subtitle text NOT NULL,
   preferences jsonb NOT NULL,
@@ -65,6 +67,22 @@ CREATE TABLE itinerary_stops (
   title text NOT NULL,
   detail text NOT NULL,
   kind text NOT NULL CHECK (kind IN ('transport', 'activity', 'meal', 'stay')),
+  place_provider text CHECK (place_provider IN ('geoapify')),
+  place_id text,
+  place_name text,
+  place_category text,
+  place_address text,
+  place_latitude double precision CHECK (place_latitude BETWEEN -90 AND 90),
+  place_longitude double precision CHECK (place_longitude BETWEEN -180 AND 180),
+  CONSTRAINT itinerary_stop_place_fields_check CHECK (
+    (place_provider IS NULL AND place_id IS NULL AND place_name IS NULL AND
+      place_category IS NULL AND place_address IS NULL AND place_latitude IS NULL AND
+      place_longitude IS NULL)
+    OR
+    (place_provider IS NOT NULL AND place_id IS NOT NULL AND place_name IS NOT NULL AND
+      place_category IS NOT NULL AND place_address IS NOT NULL AND place_latitude IS NOT NULL AND
+      place_longitude IS NOT NULL)
+  ),
   PRIMARY KEY (itinerary_id, id),
   FOREIGN KEY (itinerary_id, day_number)
     REFERENCES itinerary_days(itinerary_id, day_number)
@@ -73,3 +91,6 @@ CREATE TABLE itinerary_stops (
 
 CREATE INDEX itineraries_destination_idx ON itineraries (destination_id);
 CREATE INDEX itineraries_user_idx ON itineraries (user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX itinerary_stops_place_idx
+  ON itinerary_stops (place_provider, place_id)
+  WHERE place_id IS NOT NULL;

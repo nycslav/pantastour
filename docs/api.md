@@ -55,7 +55,14 @@ Accepts the shared trip-preference contract: destination, starting point, 1-30 d
 budget, interests, pace, and accessibility needs. It returns a validated day-by-day itinerary.
 When `AI_PROVIDER=gemini` and `GEMINI_API_KEY` are configured, the API uses Gemini structured
 output. Missing credentials or provider failures use the deterministic generator for local
-development and reliable demonstrations. The provider runs only on the backend.
+development and reliable demonstrations. The `generationSource` response field is `gemini`,
+`openai`, or `deterministic`, allowing clients to identify fallback output without inspecting its
+wording. The provider runs only on the backend.
+
+When `GEOAPIFY_API_KEY` is configured, generation first retrieves nearby establishment candidates.
+The AI selects candidate IDs rather than inventing business names, and the API resolves each valid
+selection into an optional stop `place` object containing its provider ID, verified name, category,
+address, and coordinates. Place or AI failures continue through the deterministic fallback.
 
 The mobile client calls this endpoint only after the RevenueCat premium handoff. Server-side
 RevenueCat entitlement verification remains Member 3's integration boundary.
@@ -69,6 +76,31 @@ duration in sequence, and stop IDs must be unique. It returns the saved itinerar
 
 Returns a saved itinerary with its ordered days and stops. Unknown IDs return `404` with the
 `ITINERARY_NOT_FOUND` error code.
+
+## Bucket List API
+
+Bucket-list routes currently use the backend-controlled `demo-user` identity until the shared JWT
+middleware is available. Clients cannot provide or override the user ID.
+
+### `GET /bucket-list`
+
+Returns the current user's saved destinations, ordered by `high`, `medium`, then `low` priority and
+newest first within each priority.
+
+### `POST /bucket-list`
+
+Accepts `destinationId` plus optional `priority`, `personalNotes`, and `status`. Priority defaults to
+`medium`, status defaults to `planned`, and notes are limited to 500 characters. Unknown
+destinations return `404`; saving the same destination twice returns `409`.
+
+### `PATCH /bucket-list/:id`
+
+Updates one or more of `priority`, `personalNotes`, and `status`. Status values are `planned`,
+`visited`, and `skipped`.
+
+### `DELETE /bucket-list/:id`
+
+Deletes the current user's item and returns `204`. Unknown items return `404`.
 
 ## Local development
 

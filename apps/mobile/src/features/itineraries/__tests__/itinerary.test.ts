@@ -16,6 +16,7 @@ describe('itinerary adapters', () => {
   it('creates the requested number of structured days without Cebu assumptions', () => {
     const itinerary = createMockItinerary(preferences);
     expect(itinerary.days).toHaveLength(5);
+    expect(itinerary.generationSource).toBe('deterministic');
     expect(itinerary.title).toContain('Siargao');
     expect(itinerary.title).not.toContain('Cebu');
     expect(itinerary.days.every((day) => day.stops.length === 4)).toBe(true);

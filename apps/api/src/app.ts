@@ -2,6 +2,7 @@ import cors from 'cors';
 import express, { type ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 
+import { bucketListRouter } from './modules/bucket-list/bucket-list.route';
 import { destinationRouter } from './modules/destinations/destination.route';
 import { itineraryRouter } from './modules/itineraries/itinerary.route';
 
@@ -15,6 +16,7 @@ app.get('/health', (_request, response) => {
   response.json({ status: 'ok' });
 });
 
+app.use('/bucket-list', bucketListRouter);
 app.use('/destinations', destinationRouter);
 app.use('/itineraries', itineraryRouter);
 
